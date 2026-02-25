@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import MagicInput from './MagicInput';
+import ChatDialog from './ChatDialog';
 import { Check, ChevronDown, MessageSquare, Send, X } from 'lucide-react';
 
 const ScheduledTasksClient = dynamic(() => import('./ScheduledTasks'), { ssr: false });
@@ -26,9 +27,13 @@ interface CenterMainProps {
   isLeftSidebarCollapsed: boolean;
   activeView?: 'home' | 'knowledge' | 'scheduled';
   onCloseScheduledTasks?: () => void;
+  isChatOpen?: boolean;
+  chatInitialMessage?: string;
+  onOpenChat?: (message: string) => void;
+  onCloseChat?: () => void;
 }
 
-export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', onCloseScheduledTasks }: CenterMainProps) {
+export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat }: CenterMainProps) {
   const [items, setItems] = useState<ConfirmItem[]>(initialItems);
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
@@ -68,6 +73,22 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
   const [isListCollapsed, setIsListCollapsed] = useState(false);
 
   const pendingCount = items.filter(item => item.status === 'pending').length;
+
+  const handleMagicInputSend = (message: string) => {
+    onOpenChat?.(message);
+  };
+
+  // If chat is open, render the full-page Gemini-style chat view
+  if (isChatOpen) {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden bg-white">
+        <ChatDialog
+          initialMessage={chatInitialMessage}
+          onClose={() => onCloseChat?.()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col items-center px-[60px] pl-10 pt-6 pb-5 relative overflow-y-auto overflow-x-hidden bg-[#f2f4f6] z-[1]">
@@ -247,7 +268,7 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
             </div>
             {/* Magic Input — with comfortable spacing below greeting */}
             <div className="w-full mt-10">
-              <MagicInput />
+              <MagicInput onSendMessage={handleMagicInputSend} />
             </div>
           </>
         )}

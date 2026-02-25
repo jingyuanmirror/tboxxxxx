@@ -1,0 +1,193 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Plus, Sliders, Mic } from 'lucide-react';
+
+interface Message {
+  id: string;
+  sender: 'user' | 'agent';
+  text: string;
+}
+
+// Typing indicator dots animation
+function TypingIndicator() {
+  return (
+    <div className="flex items-start gap-3">
+      {/* Agent avatar */}
+      <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center mt-0.5">
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+          <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" fill="#4285F4" />
+        </svg>
+      </div>
+      <div className="flex items-center gap-1 px-3 py-2.5">
+        <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+    </div>
+  );
+}
+
+export default function ChatDialog({
+  initialMessage = '',
+  onClose,
+}: {
+  initialMessage?: string;
+  onClose: () => void;
+}) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  // Auto-focus input
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (initialMessage && initialMessage.trim()) {
+      const id = `m-${Date.now()}`;
+      setMessages([{ id, sender: 'user', text: initialMessage }]);
+      setIsTyping(true);
+
+      const timer = setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            sender: 'agent',
+            text: '已收到你的请求，我正在为你处理中。\n\n你可以继续补充细节，或者直接告诉我接下来需要做什么。',
+          },
+        ]);
+      }, 1200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [initialMessage]);
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+    const id = `m-${Date.now()}`;
+    setMessages((prev) => [...prev, { id, sender: 'user', text: input }]);
+    setInput('');
+    setIsTyping(true);
+
+    setTimeout(() => {
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          sender: 'agent',
+          text: '（Agent 回复示例）我已收到，你可以继续补充细节或提出问题。',
+        },
+      ]);
+    }, 800);
+  };
+
+  // Derive a short title from the first user message
+  const title = messages.find((m) => m.sender === 'user')?.text.slice(0, 30) || '新对话';
+
+  return (
+    <div className="flex flex-col h-full w-full">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm flex-shrink-0">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-50"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          返回
+        </button>
+        <span className="text-sm font-medium text-gray-700 truncate max-w-[50%]">{title}</span>
+        <div className="w-16" /> {/* Spacer for balance */}
+      </div>
+
+      {/* Messages area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-8 bg-white">
+        <div className="max-w-[780px] mx-auto space-y-8">
+          {messages.map((m) =>
+            m.sender === 'user' ? (
+              /* ---- User message ---- */
+              <div key={m.id} className="flex justify-end">
+                <div className="bg-[#f0f0f0] text-[#1d1d1f] rounded-2xl rounded-br-md px-5 py-3 max-w-[75%] text-[15px] leading-relaxed whitespace-pre-wrap">
+                  {m.text}
+                </div>
+              </div>
+            ) : (
+              /* ---- Agent message ---- */
+              <div key={m.id} className="flex items-start gap-3">
+                {/* Agent sparkle icon */}
+                <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center mt-0.5">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+                    <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" fill="#4285F4" />
+                  </svg>
+                </div>
+                <div className="text-[15px] leading-[1.8] text-gray-800 max-w-[85%] whitespace-pre-wrap">
+                  {m.text}
+                </div>
+              </div>
+            )
+          )}
+
+          {isTyping && <TypingIndicator />}
+        </div>
+      </div>
+
+      {/* Bottom input bar */}
+      <div className="flex-shrink-0 border-t border-gray-100 bg-white px-6 py-4">
+        <div className="max-w-[780px] mx-auto">
+          <div className="bg-[#f3f4f6] rounded-2xl px-4 py-3 flex flex-col">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              rows={1}
+              placeholder="继续对话..."
+              className="w-full bg-transparent text-[15px] text-gray-800 outline-none resize-none placeholder:text-gray-400 leading-normal"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-2">
+                <button className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:border-gray-400 transition-colors cursor-pointer">
+                  <Plus className="w-4 h-4" />
+                </button>
+                <button className="flex items-center gap-1 px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-200/60 transition-colors cursor-pointer text-xs font-medium">
+                  <Sliders className="w-3.5 h-3.5" />
+                  工具
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-200/60 font-medium">
+                  快速
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

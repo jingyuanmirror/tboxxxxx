@@ -78,7 +78,11 @@ const MODES = [
   },
 ];
 
-export default function MagicInput() {
+interface MagicInputProps {
+  onSendMessage?: (message: string) => void;
+}
+
+export default function MagicInput({ onSendMessage }: MagicInputProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState<typeof MODES[0] | null>(null);
   const [inputValue, setInputValue] = useState('');
@@ -130,8 +134,7 @@ export default function MagicInput() {
 
   const handleSend = () => {
     if (inputValue.trim()) {
-      console.log('Sending message:', inputValue);
-      // Add your send logic here
+      onSendMessage?.(inputValue);
       setInputValue('');
     }
   };

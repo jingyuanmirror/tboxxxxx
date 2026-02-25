@@ -60,24 +60,24 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView 
             onClick={() => onOpenView && onOpenView('home')}
             className="px-[15px] py-2 mx-0 my-0.5 cursor-pointer text-[13px] rounded-lg transition-all text-[#1d1d1f] flex items-center gap-0 relative whitespace-nowrap bg-[rgba(255,255,255,0.6)] backdrop-blur-[5px] font-semibold" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
             <span className="absolute left-[15px] top-1/2 -translate-y-1/2 h-[70%] w-[3px] bg-[#1d1d1f] rounded-sm" />
-            Home
+            首页
           </div>
         </div>
 
-        {/* PROJECT */}
+        {/* 空间 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-default">PROJECT</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">空间</div>
           </div>
           <div className="nav-item">Q4 产品推广方案</div>
           <div className="nav-item">芯片市场竞品分析</div>
           <div className="nav-item">销售团队 Q3 复盘</div>
         </div>
 
-        {/* KNOWLEDGE BASE */}
+        {/* 档案库 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div onClick={() => onOpenView && onOpenView('knowledge')} className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-pointer">KNOWLEDGE BASE</div>
+            <div onClick={() => onOpenView && onOpenView('knowledge')} className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-pointer">档案库</div>
             <div className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black" title="Upload File">＋</div>
           </div>
           <div className="nav-item">最近上传</div>
@@ -85,20 +85,20 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView 
           <div className="nav-item">我的模版</div>
         </div>
 
-        {/* AGENT HUB */}
+        {/* 锦囊集市 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-default">AGENT HUB</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">锦囊集市</div>
             <div className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black" title="查看智能体市场">→</div>
           </div>
           <div className="nav-item">数据分析智能体</div>
           <div className="nav-item">文案写作智能体</div>
         </div>
 
-        {/* SCHEDULED TASKS */}
+        {/* 定时任务 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-default">SCHEDULED TASKS</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">定时任务</div>
               <button
                 type="button"
                 onClick={(e) => {
@@ -124,10 +124,10 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView 
           <div className="nav-item">每周总结 (周五)</div>
         </div>
 
-        {/* CHAT HISTORY */}
+        {/* 历史对话 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-default">CHAT HISTORY</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">历史对话</div>
           </div>
           <div className="nav-item">帮我写个项目方案的开头...</div>
           <div className="nav-item">这个报告数据有点问题...</div>
