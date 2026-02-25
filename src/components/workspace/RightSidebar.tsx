@@ -22,7 +22,7 @@ export default function RightSidebar({ isVisible }: RightSidebarProps) {
   return (
     <div
       className={`flex-shrink-0 pt-6 pb-5 transition-all duration-300 ease-in-out flex flex-col relative z-[5] ${
-        isVisible ? 'w-[240px] px-4' : 'w-[50px] px-2.5 overflow-y-hidden'
+        isVisible ? 'w-[280px] px-5' : 'w-[50px] px-2.5 overflow-y-hidden'
       }`}
     >
       <div className={`transition-opacity duration-300 flex flex-col gap-3 ${isVisible ? 'opacity-100 visible' : 'opacity-0 invisible h-0'}`}>
