@@ -1,6 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+
+interface UploadedFile {
+  id: string;
+  file: File;
+  name: string;
+  type: string;
+  isImage: boolean;
+  previewUrl?: string;
+}
+
+const FILE_TYPE_ICONS: Record<string, { label: string; color: string }> = {
+  pdf: { label: 'PDF', color: '#e74c3c' },
+  doc: { label: 'DOC', color: '#2b579a' },
+  docx: { label: 'DOC', color: '#2b579a' },
+  xls: { label: 'XLS', color: '#217346' },
+  xlsx: { label: 'XLS', color: '#217346' },
+  ppt: { label: 'PPT', color: '#d24726' },
+  pptx: { label: 'PPT', color: '#d24726' },
+  txt: { label: 'TXT', color: '#6b7280' },
+  csv: { label: 'CSV', color: '#217346' },
+  zip: { label: 'ZIP', color: '#f59e0b' },
+  rar: { label: 'RAR', color: '#f59e0b' },
+  mp4: { label: 'MP4', color: '#8b5cf6' },
+  mp3: { label: 'MP3', color: '#ec4899' },
+  default: { label: 'FILE', color: '#6b7280' },
+};
 
 const MODES = [
   { name: 'PPT 演示', iconKey: 'ppt', icon: () => (
@@ -54,11 +80,51 @@ const MODES = [
 
 export default function MagicInput() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedMode, setSelectedMode] = useState(MODES[0]);
+  const [selectedMode, setSelectedMode] = useState<typeof MODES[0] | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getFileExtension = (filename: string) => {
+    return filename.split('.').pop()?.toLowerCase() || '';
+  };
+
+  const isImageFile = (file: File) => {
+    return file.type.startsWith('image/');
+  };
+
+  const handleFileUpload = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newFiles: UploadedFile[] = Array.from(files).map((file) => {
+      const isImage = isImageFile(file);
+      const uploaded: UploadedFile = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        file,
+        name: file.name,
+        type: getFileExtension(file.name),
+        isImage,
+        previewUrl: isImage ? URL.createObjectURL(file) : undefined,
+      };
+      return uploaded;
+    });
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
+  }, []);
+
+  const handleRemoveFile = useCallback((id: string) => {
+    setUploadedFiles((prev) => {
+      const file = prev.find((f) => f.id === id);
+      if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+      return prev.filter((f) => f.id !== id);
+    });
+  }, []);
 
   const handleModeSelect = (mode: typeof MODES[0]) => {
-    setSelectedMode(mode);
+    // Toggle off if already selected
+    if (selectedMode?.iconKey === mode.iconKey) {
+      setSelectedMode(null);
+    } else {
+      setSelectedMode(mode);
+    }
     setIsDropdownOpen(false);
   };
 
@@ -72,7 +138,7 @@ export default function MagicInput() {
 
   return (
     <div 
-      className="bg-[rgba(255,255,255,0.75)] backdrop-blur-[16px] border border-[rgba(255,255,255,0.6)] w-full max-w-[950px] h-[170px] rounded-[24px] p-[15px_25px_20px_25px] box-border flex flex-col justify-between relative transition-all duration-300 ease-in-out flex-shrink-0 mb-[30px] hover:-translate-y-[3px] z-[2]"
+      className="bg-[rgba(255,255,255,0.75)] backdrop-blur-[16px] border border-[rgba(255,255,255,0.6)] w-full max-w-[950px] min-h-[170px] rounded-[24px] p-[15px_25px_20px_25px] box-border flex flex-col justify-between relative transition-all duration-300 ease-in-out flex-shrink-0 mb-[30px] hover:-translate-y-[3px] z-[2]"
       style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0,0,0,0.02)' }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255,255,255,0.4)';
@@ -81,58 +147,51 @@ export default function MagicInput() {
         e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0,0,0,0.02)';
       }}
     >
-      {/* Mode Selector Bar - V8.33 恢复模式选择条 */}
-      <div className="flex justify-end items-center pb-2.5 mb-2.5 border-b border-[rgba(0,0,0,0.06)] flex-shrink-0">
-        {/* Mode Dropdown */}
-        <div className="relative inline-block">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="bg-[#1d1d1f] text-white px-[15px] py-1.5 rounded-[10px] text-[13px] font-medium flex items-center gap-1.5 cursor-pointer transition-colors hover:bg-black"
-            style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}
-          >
-            <span>{selectedMode.name}</span>
-            <svg className="w-3.5 h-3.5 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" style={{ strokeWidth: 2 }}>
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-
-          {/* Dropdown Menu */}
-          {isDropdownOpen && (
-            <div 
-              className="absolute top-full right-0 min-w-[160px] bg-white rounded-xl mt-1 overflow-hidden z-50"
-              style={{ 
-                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05)',
-                padding: '8px 0'
-              }}
+      {/* Uploaded Files Preview */}
+      {uploadedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2 pb-2.5 mb-1 border-b border-[rgba(0,0,0,0.06)]">
+          {uploadedFiles.map((file) => (
+            <div
+              key={file.id}
+              className="group relative flex items-center gap-2 bg-[rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.06)] rounded-lg overflow-hidden transition-all hover:border-[rgba(0,0,0,0.12)]"
             >
-              {MODES.map((mode) => (
-                <div
-                  key={mode.iconKey}
-                  onClick={() => handleModeSelect(mode)}
-                  className={`flex items-center px-[15px] py-2 text-sm cursor-pointer transition-colors font-medium gap-2.5 ${
-                    selectedMode.iconKey === mode.iconKey 
-                      ? 'bg-[rgba(0,0,0,0.04)] font-semibold text-[#1d1d1f]' 
-                      : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
-                  }`}
-                >
-                  <span 
-                    className={`w-4 h-4 flex-shrink-0 flex items-center justify-center ${
-                      mode.isSpecial 
-                        ? 'bg-[#FF2D55] rounded-full' 
-                        : ''
-                    } ${
-                      mode.isSpecial ? 'text-white' : 'text-[#6a6e73]'
-                    }`}
-                  >
-                    {mode.icon && mode.icon()}
-                  </span>
-                  {mode.name}{mode.isSpecial ? ' (Agent)' : ''}
+              {file.isImage ? (
+                /* Image preview */
+                <div className="w-[72px] h-[72px] flex-shrink-0 relative">
+                  <img
+                    src={file.previewUrl}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              ))}
+              ) : (
+                /* File type badge + name */
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <span
+                    className="text-[10px] font-bold text-white px-1.5 py-0.5 rounded leading-none flex-shrink-0"
+                    style={{ backgroundColor: (FILE_TYPE_ICONS[file.type] || FILE_TYPE_ICONS.default).color }}
+                  >
+                    {(FILE_TYPE_ICONS[file.type] || FILE_TYPE_ICONS.default).label}
+                  </span>
+                  <span className="text-[12px] text-[#444] max-w-[120px] truncate" title={file.name}>
+                    {file.name}
+                  </span>
+                </div>
+              )}
+              {/* Remove button */}
+              <button
+                onClick={() => handleRemoveFile(file.id)}
+                className="absolute top-1 right-1 w-4 h-4 bg-[rgba(0,0,0,0.5)] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
-          )}
+          ))}
         </div>
-      </div>
+      )}
 
       {/* Input Area */}
       <textarea
@@ -148,14 +207,102 @@ export default function MagicInput() {
         }}
       />
 
-      {/* Input Tools - V8.33 恢复文件徽章位置 */}
+      {/* Input Tools */}
       <div className="flex justify-between items-center">
         <div className="flex gap-3 items-center">
-          <div className="inline-flex items-center bg-[rgba(0,0,0,0.04)] px-2.5 py-1 rounded-md text-[11px] font-semibold text-[#555] border border-[rgba(0,0,0,0.05)] relative -top-[5px] mr-[15px]">
-            3 files attached
+          {/* Upload Button */}
+          <label
+            className="w-7 h-7 rounded-full border border-[rgba(0,0,0,0.15)] flex items-center justify-center cursor-pointer text-[#86868b] hover:text-[#1d1d1f] hover:border-[rgba(0,0,0,0.3)] hover:bg-[rgba(0,0,0,0.04)] transition-all relative -top-[3px]"
+            title="上传文件"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                handleFileUpload(e.target.files);
+                e.target.value = '';
+              }}
+            />
+          </label>
+
+          {/* Mode Dropdown */}
+          <div className="relative inline-block">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="px-[12px] py-1.5 rounded-[10px] text-[13px] font-medium flex items-center gap-1.5 cursor-pointer transition-colors relative -top-[3px] text-[#555] hover:bg-[rgba(0,0,0,0.06)]"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" style={{ strokeWidth: 2 }}>
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="12" cy="5" r="1" />
+                <circle cx="12" cy="19" r="1" />
+                <line x1="4" y1="8" x2="8" y2="8" />
+                <line x1="4" y1="16" x2="8" y2="16" />
+                <line x1="16" y1="8" x2="20" y2="8" />
+                <line x1="16" y1="16" x2="20" y2="16" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu - opens upward */}
+            {isDropdownOpen && (
+              <div 
+                className="absolute bottom-full left-0 min-w-[160px] bg-white rounded-xl mb-1 overflow-hidden z-50"
+                style={{ 
+                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05)',
+                  padding: '8px 0'
+                }}
+              >
+                {MODES.map((mode) => (
+                  <div
+                    key={mode.iconKey}
+                    onClick={() => handleModeSelect(mode)}
+                    className={`flex items-center px-[15px] py-2 text-sm cursor-pointer transition-colors font-medium gap-2.5 ${
+                      selectedMode?.iconKey === mode.iconKey 
+                        ? 'bg-[rgba(0,0,0,0.04)] font-semibold text-[#1d1d1f]' 
+                        : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    <span 
+                      className={`w-4 h-4 flex-shrink-0 flex items-center justify-center ${
+                        mode.isSpecial 
+                          ? 'bg-[#FF2D55] rounded-full' 
+                          : ''
+                      } ${
+                        mode.isSpecial ? 'text-white' : 'text-[#6a6e73]'
+                      }`}
+                    >
+                      {mode.icon && mode.icon()}
+                    </span>
+                    {mode.name}{mode.isSpecial ? ' ' : ''}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <span className="text-lg cursor-pointer text-[#86868b] transition-all opacity-80 hover:text-black hover:opacity-100 hover:scale-110" title="Settings">⚙️</span>
-          <span className="text-lg cursor-pointer text-[#86868b] transition-all opacity-80 hover:text-black hover:opacity-100 hover:scale-110" title="Attach File">📎</span>
+
+          {/* Selected Mode Chip */}
+          {selectedMode && (
+            <div className="flex items-center gap-1.5 relative -top-[3px] text-[#1a73e8]">
+              <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[#1a73e8]">
+                {selectedMode.icon && selectedMode.icon()}
+              </span>
+              <span className="text-[13px] font-medium">{selectedMode.name}</span>
+              <button
+                onClick={() => setSelectedMode(null)}
+                className="w-4 h-4 flex items-center justify-center text-[#1a73e8] hover:text-[#174ea6] cursor-pointer transition-colors ml-0.5"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
         <button
           onClick={handleSend}

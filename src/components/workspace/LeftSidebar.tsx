@@ -5,9 +5,10 @@ import { useState } from 'react';
 interface LeftSidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onOpenView?: (view: 'home'|'knowledge'|'scheduled') => void;
 }
 
-export default function LeftSidebar({ isCollapsed, onToggleCollapse }: LeftSidebarProps) {
+export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView }: LeftSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
@@ -55,7 +56,9 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse }: LeftSideb
       <div className={`flex-grow pb-5 overflow-y-auto transition-opacity duration-300 ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
         {/* Home */}
         <div className="mb-[30px]">
-          <div className="px-[15px] py-2 mx-0 my-0.5 cursor-pointer text-[13px] rounded-lg transition-all text-[#1d1d1f] flex items-center gap-0 relative whitespace-nowrap bg-[rgba(255,255,255,0.6)] backdrop-blur-[5px] font-semibold" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+          <div
+            onClick={() => onOpenView && onOpenView('home')}
+            className="px-[15px] py-2 mx-0 my-0.5 cursor-pointer text-[13px] rounded-lg transition-all text-[#1d1d1f] flex items-center gap-0 relative whitespace-nowrap bg-[rgba(255,255,255,0.6)] backdrop-blur-[5px] font-semibold" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
             <span className="absolute left-[15px] top-1/2 -translate-y-1/2 h-[70%] w-[3px] bg-[#1d1d1f] rounded-sm" />
             Home
           </div>
@@ -74,7 +77,7 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse }: LeftSideb
         {/* KNOWLEDGE BASE */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-default">KNOWLEDGE BASE</div>
+            <div onClick={() => onOpenView && onOpenView('knowledge')} className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-pointer">KNOWLEDGE BASE</div>
             <div className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black" title="Upload File">＋</div>
           </div>
           <div className="nav-item">最近上传</div>
@@ -96,6 +99,26 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse }: LeftSideb
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
             <div className="text-[11px] uppercase tracking-[1.2px] text-[#a1a1a6] font-bold cursor-default">SCHEDULED TASKS</div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('[LeftSidebar] Scheduled settings clicked');
+                  if (!onOpenView) {
+                    if (typeof window !== 'undefined') window.location.href = '/scheduled-tasks';
+                    return;
+                  }
+                  onOpenView('scheduled');
+                }}
+                title="Open Scheduled Tasks"
+                aria-label="Open Scheduled Tasks"
+                className="ml-2 text-sm text-[#a1a1a6] cursor-pointer w-7 h-7 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.06)]"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4" style={{ strokeWidth: 1.6 }}>
+                  <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" strokeLinecap="round" strokeLinejoin="round"></path>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09c.7 0 1.28-.41 1.51-1a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 0 1 6.24 2.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9.91 2V1a2 2 0 0 1 4 0v.09c.7 0 1.28.41 1.51 1 .26.6.91 1 .09 1.82l.06.06a2 2 0 0 1 2.83 2.83l-.06.06c-.43.43-.6 1.06-.33 1.82.22.59.8 1 1.51 1H21a2 2 0 0 1 0 4h-.09c-.7 0-1.28.41-1.51 1z" strokeLinecap="round" strokeLinejoin="round"></path>
+                </svg>
+              </button>
           </div>
           <div className="nav-item">AI大事件提醒 (09:30)</div>
           <div className="nav-item">每周总结 (周五)</div>

@@ -9,6 +9,7 @@ import RightSidebar from '@/components/workspace/RightSidebar';
 export default function Home() {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarVisible, setIsRightSidebarVisible] = useState(true);
+  const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'>('home');
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f6]">
@@ -21,9 +22,10 @@ export default function Home() {
         <LeftSidebar 
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
+          onOpenView={(v) => setActiveView(v)}
         />
-        
-        <CenterMain isLeftSidebarCollapsed={isLeftSidebarCollapsed} />
+
+        <CenterMain isLeftSidebarCollapsed={isLeftSidebarCollapsed} activeView={activeView} onCloseScheduledTasks={() => setActiveView('home')} />
         
         <RightSidebar isVisible={isRightSidebarVisible} />
       </div>

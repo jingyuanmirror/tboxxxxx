@@ -1,13 +1,74 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import MagicInput from './MagicInput';
+import { Check, ChevronDown, MessageSquare, Send, X } from 'lucide-react';
+
+const ScheduledTasksClient = dynamic(() => import('./ScheduledTasks'), { ssr: false });
+const KnowledgeView = dynamic(() => import('./KnowledgeView'), { ssr: false });
+
+type ConfirmItemStatus = 'pending' | 'confirmed' | 'replied';
+
+interface ConfirmItem {
+  id: number;
+  text: string;
+  status: ConfirmItemStatus;
+  replyText?: string;
+}
+
+const initialItems: ConfirmItem[] = [
+  { id: 1, text: '确认 Q4 推广方案预算分配表（附件已更新）', status: 'pending' },
+  { id: 2, text: '审批芯片市场竞品分析报告终稿', status: 'pending' },
+];
 
 interface CenterMainProps {
   isLeftSidebarCollapsed: boolean;
+  activeView?: 'home' | 'knowledge' | 'scheduled';
+  onCloseScheduledTasks?: () => void;
 }
 
-export default function CenterMain({ isLeftSidebarCollapsed }: CenterMainProps) {
+export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', onCloseScheduledTasks }: CenterMainProps) {
+  const [items, setItems] = useState<ConfirmItem[]>(initialItems);
+  const [replyingId, setReplyingId] = useState<number | null>(null);
+  const [replyDraft, setReplyDraft] = useState('');
+  const replyInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (replyingId !== null && replyInputRef.current) {
+      replyInputRef.current.focus();
+    }
+  }, [replyingId]);
+
+  const handleConfirm = (id: number) => {
+    setItems(prev => prev.map(item => item.id === id ? { ...item, status: 'confirmed' } : item));
+    if (replyingId === id) {
+      setReplyingId(null);
+      setReplyDraft('');
+    }
+  };
+
+  const handleStartReply = (id: number) => {
+    setReplyingId(id);
+    setReplyDraft('');
+  };
+
+  const handleCancelReply = () => {
+    setReplyingId(null);
+    setReplyDraft('');
+  };
+
+  const handleSendReply = (id: number) => {
+    if (!replyDraft.trim()) return;
+    setItems(prev => prev.map(item => item.id === id ? { ...item, status: 'replied', replyText: replyDraft.trim() } : item));
+    setReplyingId(null);
+    setReplyDraft('');
+  };
+
+  const [isListCollapsed, setIsListCollapsed] = useState(false);
+
+  const pendingCount = items.filter(item => item.status === 'pending').length;
+
   return (
     <div className="flex-1 flex flex-col items-center px-[60px] pl-10 pt-6 pb-5 relative overflow-y-auto overflow-x-hidden bg-[#f2f4f6] z-[1]">
       {/* Background Image */}
@@ -25,23 +86,175 @@ export default function CenterMain({ isLeftSidebarCollapsed }: CenterMainProps) 
         }}
       />
 
-      {/* Dialogue History */}
-      <div className="w-full max-w-[950px] mb-[70px] flex flex-col items-start relative z-[2]">
-        {/* Initial Greeting */}
-        <div className="bg-none backdrop-blur-none border-none shadow-none p-0 w-full max-w-[950px] leading-relaxed mb-0 self-start rounded-none">
-          <div className="text-[13px] text-[#6e6e73] mb-2 font-medium block opacity-80">周四，04:22 PM</div>
-          <div className="font-playfair-display text-[28px] font-bold text-[#1d1d1f] mb-2.5 leading-[1.3] pb-3 border-b border-dashed border-[rgba(0,0,0,0.1)] w-full">
-            Hi Lisa，午后好。享受这片刻的宁静了吗？
+      {/* Main content area: render based on activeView */}
+      <div className="w-full max-w-[950px] flex flex-col items-start relative z-[2]">
+        {activeView === 'knowledge' ? (
+          <KnowledgeView />
+        ) : activeView === 'scheduled' ? (
+          <div className="w-full">
+            <React.Suspense fallback={<div className="py-10 text-center text-gray-500">加载中…</div>}>
+              <ScheduledTasksClient />
+            </React.Suspense>
           </div>
-          <div className="text-base text-[#444] pt-0 border-t-0 mt-0 leading-[1.7]">
-            昨天的《Q4 推广方案》已经存档。今天光线不错，非常适合进行深度思考工作。
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Home greeting */}
+            <div className="bg-none backdrop-blur-none border-none shadow-none p-0 w-full max-w-[950px] leading-relaxed mb-0 self-start rounded-none">
+              <div className="text-[13px] text-[#6e6e73] mb-2 font-medium block opacity-80">周四，04:22 PM</div>
+              <div className="font-playfair-display text-[28px] font-bold text-[#1d1d1f] mb-2.5 leading-[1.3] pb-3 border-b border-dashed border-[rgba(0,0,0,0.1)] w-full flex items-center gap-2">
+                <img
+                  src="/mascot.png"
+                  alt="Tbox mascot"
+                  className="w-[52px] h-[52px] object-contain flex-shrink-0"
+                />
+                Hi Lisa，午后好。今天天气真不错，适合深度思考
+              </div>
+              <div className="text-base text-[#444] pt-0 border-t-0 mt-0 leading-[1.7]">
+                昨天的《Q4 推广方案》已经存档。
+              </div>
+
+              {/* Pending Confirmation List */}
+              <div className="mt-4 w-full">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[13px] font-semibold text-[#1d1d1f]">以下事项需要您确认</span>
+                  {pendingCount > 0 && (
+                    <span className="text-[11px] bg-[#ff6b35] text-white px-1.5 py-0.5 rounded-full font-medium leading-none min-w-[18px] text-center">
+                      {pendingCount}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setIsListCollapsed(!isListCollapsed)}
+                    className="ml-auto flex items-center gap-1 text-[12px] text-[#86868b] hover:text-[#333] transition-colors cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-[rgba(0,0,0,0.04)]"
+                  >
+                    <span>{isListCollapsed ? '展开' : '收起'}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isListCollapsed ? '' : 'rotate-180'}`} />
+                  </button>
+                </div>
+                <div className={`flex flex-col gap-2 transition-all duration-300 overflow-hidden ${isListCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
+                  {items.map((item) => (
+                    <div key={item.id} className="flex flex-col">
+                      {/* Item Row */}
+                      <div
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                          item.status !== 'pending'
+                            ? 'bg-[rgba(0,0,0,0.02)]'
+                            : 'bg-[rgba(255,255,255,0.75)] backdrop-blur-sm'
+                        }`}
+                        style={{
+                          boxShadow: item.status === 'pending' ? '0 1px 4px rgba(0,0,0,0.04)' : 'none',
+                        }}
+                      >
+                        {/* Status Indicator */}
+                        <div className={`flex-shrink-0 w-[7px] h-[7px] rounded-full ${
+                          item.status === 'pending' ? 'bg-[#ff9500]' : item.status === 'confirmed' ? 'bg-[#34c759]' : 'bg-[#007aff]'
+                        }`} />
+
+                        {/* Text */}
+                        <span className={`flex-1 text-[13.5px] leading-[1.5] transition-all duration-200 ${
+                          item.status !== 'pending' ? 'text-[#999]' : 'text-[#333]'
+                        }`}>
+                          {item.text}
+                        </span>
+
+                        {/* Action Buttons */}
+                        {item.status === 'pending' && (
+                          <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                            <button
+                              onClick={() => handleStartReply(item.id)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] font-medium text-[#666] bg-[rgba(0,0,0,0.04)] hover:bg-[rgba(0,0,0,0.08)] transition-colors cursor-pointer"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              回复
+                            </button>
+                            <button
+                              onClick={() => handleConfirm(item.id)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] font-medium text-white bg-[#1d1d1f] hover:bg-black transition-colors cursor-pointer"
+                            >
+                              <Check className="w-3 h-3" strokeWidth={2.5} />
+                              确认
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Confirmed Badge */}
+                        {item.status === 'confirmed' && (
+                          <span className="flex items-center gap-1 text-[11px] text-[#34c759] font-medium flex-shrink-0">
+                            <Check className="w-3 h-3" strokeWidth={2.5} />
+                            已确认
+                          </span>
+                        )}
+
+                        {/* Replied Badge */}
+                        {item.status === 'replied' && (
+                          <span className="flex items-center gap-1 text-[11px] text-[#007aff] font-medium flex-shrink-0">
+                            <MessageSquare className="w-3 h-3" />
+                            已回复
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Inline Reply Input */}
+                      {replyingId === item.id && (
+                        <div className="mt-1.5 ml-[19px] flex flex-col gap-2 bg-[rgba(255,255,255,0.85)] backdrop-blur-sm rounded-xl px-4 py-3 border border-[rgba(0,0,0,0.06)]"
+                          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                        >
+                          <textarea
+                            ref={replyInputRef}
+                            value={replyDraft}
+                            onChange={(e) => setReplyDraft(e.target.value)}
+                            placeholder="输入您的建议或回复..."
+                            className="w-full text-[13px] text-[#333] bg-transparent border-none outline-none resize-none leading-[1.6] placeholder:text-[#aaa] min-h-[60px]"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendReply(item.id);
+                              }
+                              if (e.key === 'Escape') {
+                                handleCancelReply();
+                              }
+                            }}
+                          />
+                          <div className="flex justify-end items-center gap-2">
+                            <button
+                              onClick={handleCancelReply}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] font-medium text-[#666] hover:bg-[rgba(0,0,0,0.05)] transition-colors cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                              取消
+                            </button>
+                            <button
+                              onClick={() => handleSendReply(item.id)}
+                              disabled={!replyDraft.trim()}
+                              className="flex items-center gap-1 px-3 py-1 rounded-lg text-[12px] font-medium text-white bg-[#1d1d1f] hover:bg-black transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <Send className="w-3 h-3" />
+                              发送
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Show reply content after replied */}
+                      {item.status === 'replied' && item.replyText && (
+                        <div className="mt-1 ml-[19px] px-3.5 py-2 bg-[rgba(0,122,255,0.04)] rounded-lg border border-[rgba(0,122,255,0.08)]">
+                          <p className="text-[12px] text-[#555] leading-[1.5] m-0">我的回复：{item.replyText}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Magic Input — with comfortable spacing below greeting */}
+            <div className="w-full mt-10">
+              <MagicInput />
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Magic Input Container */}
-      <MagicInput />
-
+      {activeView === 'home' && (
+      <>
       {/* Footer Hint */}
       <div className="mb-[30px] text-[#86868b] text-xs text-center leading-tight max-w-[600px]" style={{ textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>
         Complex bureaucracy just got simple. Add any files, give any task.
@@ -88,6 +301,8 @@ export default function CenterMain({ isLeftSidebarCollapsed }: CenterMainProps) 
           ))}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
