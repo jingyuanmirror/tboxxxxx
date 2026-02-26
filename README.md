@@ -175,6 +175,24 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. You're read
 
 ---
 
+## 🔐 Environment variables
+
+This project uses a server-side proxy to call AI models. Create a `.env.local` file in the project root (ignored by git) with at least the following values:
+
+```
+OPENAI_API_KEY=sk-...
+# Optional: override the default model name
+OPENAI_MODEL=gpt-4o-mini
+```
+
+- `OPENAI_API_KEY`: Required. Your OpenAI API key (or a ZenMux/other gateway key compatible with the OpenAI API).
+- `OPENAI_MODEL`: Optional. Model id to use for completions. Defaults to `gpt-4o-mini` in the example API route.
+
+For local testing you can also copy `.env.example` to `.env.local` and fill in your key.
+
+
+---
+
 ## 🛠️ Common Development Tasks
 
 ### Adding UI Components

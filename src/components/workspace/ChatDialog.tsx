@@ -78,21 +78,47 @@ export default function ChatDialog({
   const handleSend = () => {
     if (!input.trim()) return;
     const id = `m-${Date.now()}`;
-    setMessages((prev) => [...prev, { id, sender: 'user', text: input }]);
+    // append user message immediately
+    const userMessage = { id, sender: 'user' as const, text: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          sender: 'agent',
-          text: '（Agent 回复示例）我已收到，你可以继续补充细节或提出问题。',
-        },
-      ]);
-    }, 800);
+    (async () => {
+      try {
+        // Build messages for API: map local messages to OpenAI role/content
+        const msgs = [...messages, userMessage].map((m) => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text }));
+
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: msgs }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.error || `Request failed: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const replyText = data?.reply || '抱歉，未收到回复。';
+        setMessages((prev) => [
+          ...prev,
+          { id: `a-${Date.now()}`, sender: 'agent' as const, text: replyText },
+        ]);
+      } catch (e: any) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            sender: 'agent' as const,
+            text: '抱歉，无法连接到对话服务：' + (e?.message ?? String(e)),
+          },
+        ]);
+      } finally {
+        setIsTyping(false);
+      }
+    })();
   };
 
   // Derive a short title from the first user message

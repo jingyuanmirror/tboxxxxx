@@ -67,7 +67,7 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView 
         {/* 空间 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">空间</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">话题空间</div>
           </div>
           <div className="nav-item">Q4 产品推广方案</div>
           <div className="nav-item">芯片市场竞品分析</div>

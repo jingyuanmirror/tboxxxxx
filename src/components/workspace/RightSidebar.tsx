@@ -7,9 +7,9 @@ interface RightSidebarProps {
 }
 
 const TABS = [
-  { id: 'insight',  label: '环境感知', icon: '✦', badge: 3 },
-  { id: 'reminder', label: '私人提醒', icon: '⏰', badge: 1 },
-  { id: 'collab',   label: '协作进度', icon: '👥', badge: 2 },
+  { id: 'insight',  label: '事件追踪', icon: '✦', badge: 3 },
+  { id: 'reminder', label: '报告进度', icon: '⏰', badge: 1 },
+  { id: 'collab',   label: '协作进度', icon: '🤝', badge: 0 },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
