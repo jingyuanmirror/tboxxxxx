@@ -91,7 +91,7 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center px-[60px] pl-10 pt-6 pb-5 relative overflow-y-auto overflow-x-hidden bg-[#f2f4f6] z-[1]">
+    <div className={`flex-1 flex flex-col items-center pt-6 pb-5 relative overflow-y-auto overflow-x-hidden bg-[#f2f4f6] z-[1] ${activeView === 'knowledge' ? 'px-8' : 'px-[60px] pl-10'}`}>
       {/* Background Image */}
       <div 
         className={`fixed top-0 right-0 bottom-0 opacity-50 pointer-events-none -z-[1] transition-all duration-300 ${
@@ -107,11 +107,16 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
         }}
       />
 
+      {/* Knowledge view: full width, outside the narrow content column */}
+      {activeView === 'knowledge' && (
+        <div className="w-full relative z-[2]">
+          <KnowledgeView />
+        </div>
+      )}
+
       {/* Main content area: render based on activeView */}
       <div className="w-full max-w-[950px] flex flex-col items-start relative z-[2]">
-        {activeView === 'knowledge' ? (
-          <KnowledgeView />
-        ) : activeView === 'scheduled' ? (
+        {activeView === 'knowledge' ? null : activeView === 'scheduled' ? (
           <div className="w-full">
             <React.Suspense fallback={<div className="py-10 text-center text-gray-500">加载中…</div>}>
               <ScheduledTasksClient />
