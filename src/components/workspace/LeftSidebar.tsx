@@ -2,13 +2,21 @@
 
 import { useState } from 'react';
 
+interface ChatHistoryItem {
+  id: string;
+  title: string;
+  initialMessage: string;
+}
+
 interface LeftSidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onOpenView?: (view: 'home'|'knowledge'|'scheduled') => void;
+  chatHistory?: ChatHistoryItem[];
+  onOpenChat?: (message: string) => void;
 }
 
-export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView }: LeftSidebarProps) {
+export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView, chatHistory = [], onOpenChat }: LeftSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
@@ -88,7 +96,7 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView 
         {/* 锦囊集市 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">锦囊集市</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">劳务集市</div>
             <div className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black" title="查看智能体市场">→</div>
           </div>
           <div className="nav-item">数据分析智能体</div>
@@ -129,8 +137,20 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView 
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
             <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">历史对话</div>
           </div>
-          <div className="nav-item">帮我写个项目方案的开头...</div>
-          <div className="nav-item">这个报告数据有点问题...</div>
+          {chatHistory.length === 0 ? (
+            <div className="px-[25px] py-2 text-[12px] text-[#a1a1a6] italic">暂无历史对话</div>
+          ) : (
+            chatHistory.map((item) => (
+              <div
+                key={item.id}
+                className="nav-item"
+                onClick={() => onOpenChat?.(item.initialMessage)}
+                title={item.initialMessage}
+              >
+                {item.title}
+              </div>
+            ))
+          )}
         </div>
       </div>
 

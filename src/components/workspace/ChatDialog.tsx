@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { ArrowLeft, Plus, Sliders, Mic } from 'lucide-react';
 
 interface Message {
@@ -9,16 +10,21 @@ interface Message {
   text: string;
 }
 
+// Agent avatar component
+function AgentAvatar() {
+  return (
+    <div className="w-7 h-7 flex-shrink-0 rounded-full overflow-hidden mt-0.5">
+      <Image src="/mascot.png" alt="Tbox" width={28} height={28} className="w-full h-full object-cover" />
+    </div>
+  );
+}
+
 // Typing indicator dots animation
 function TypingIndicator() {
   return (
     <div className="flex items-start gap-3">
       {/* Agent avatar */}
-      <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center mt-0.5">
-        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-          <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" fill="#4285F4" />
-        </svg>
-      </div>
+      <AgentAvatar />
       <div className="flex items-center gap-1 px-3 py-2.5">
         <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
         <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -40,6 +46,7 @@ export default function ChatDialog({
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const initialMessageSent = useRef(false);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -54,24 +61,44 @@ export default function ChatDialog({
   }, []);
 
   useEffect(() => {
-    if (initialMessage && initialMessage.trim()) {
-      const id = `m-${Date.now()}`;
-      setMessages([{ id, sender: 'user', text: initialMessage }]);
+    if (initialMessage && initialMessage.trim() && !initialMessageSent.current) {
+      initialMessageSent.current = true;
+      const userMsg = { id: `m-${Date.now()}`, sender: 'user' as const, text: initialMessage };
+      setMessages([userMsg]);
       setIsTyping(true);
 
-      const timer = setTimeout(() => {
-        setIsTyping(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `a-${Date.now()}`,
-            sender: 'agent',
-            text: '已收到你的请求，我正在为你处理中。\n\n你可以继续补充细节，或者直接告诉我接下来需要做什么。',
-          },
-        ]);
-      }, 1200);
+      (async () => {
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: [{ role: 'user', content: initialMessage }] }),
+          });
 
-      return () => clearTimeout(timer);
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err?.error || `Request failed: ${res.status}`);
+          }
+
+          const data = await res.json();
+          const replyText = data?.reply || '抱歉，未收到回复。';
+          setMessages((prev) => [
+            ...prev,
+            { id: `a-${Date.now()}`, sender: 'agent' as const, text: replyText },
+          ]);
+        } catch (e: any) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `a-${Date.now()}`,
+              sender: 'agent' as const,
+              text: '抱歉，无法连接到对话服务：' + (e?.message ?? String(e)),
+            },
+          ]);
+        } finally {
+          setIsTyping(false);
+        }
+      })();
     }
   }, [initialMessage]);
 
@@ -153,12 +180,8 @@ export default function ChatDialog({
             ) : (
               /* ---- Agent message ---- */
               <div key={m.id} className="flex items-start gap-3">
-                {/* Agent sparkle icon */}
-                <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center mt-0.5">
-                  <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-                    <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" fill="#4285F4" />
-                  </svg>
-                </div>
+                {/* Agent tbox mascot icon */}
+                <AgentAvatar />
                 <div className="text-[15px] leading-[1.8] text-gray-800 max-w-[85%] whitespace-pre-wrap">
                   {m.text}
                 </div>

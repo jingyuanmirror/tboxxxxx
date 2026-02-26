@@ -7,13 +7,14 @@ export async function POST(req: Request) {
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 
     if (!OPENAI_API_KEY) {
       return NextResponse.json({ error: 'Server misconfigured: missing OPENAI_API_KEY' }, { status: 500 });
     }
 
-    // Forward conversation to OpenAI Chat Completions API
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Forward conversation to OpenAI-compatible Chat Completions API (supports ZenMux)
+    const resp = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

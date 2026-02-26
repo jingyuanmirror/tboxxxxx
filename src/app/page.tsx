@@ -31,6 +31,7 @@ export default function Home() {
         <Header 
           onToggleRightSidebar={() => setIsRightSidebarVisible(!isRightSidebarVisible)}
           isRightSidebarVisible={isRightSidebarVisible}
+          activeView={activeView}
         />
       )}
       
@@ -51,7 +52,7 @@ export default function Home() {
           onCloseChat={handleCloseChat}
         />
         
-        {!isChatOpen && <RightSidebar isVisible={isRightSidebarVisible} />}
+        {!isChatOpen && activeView !== 'knowledge' && <RightSidebar isVisible={isRightSidebarVisible} />}
       </div>
     </div>
   );
