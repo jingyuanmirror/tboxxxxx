@@ -315,13 +315,143 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
           </label>
 
           {/* @ Picker */}
-          <button
-            title="引用档案库文件 / 智能体"
-            onClick={() => openPicker('files')}
-            className="w-7 h-7 rounded-full border border-[rgba(0,0,0,0.15)] flex items-center justify-center cursor-pointer text-[#86868b] hover:text-[#1d1d1f] hover:border-[rgba(0,0,0,0.3)] hover:bg-[rgba(0,0,0,0.04)] transition-all relative -top-[3px]"
-          >
-            <span className="text-[14px] font-semibold leading-none">@</span>
-          </button>
+          <div className="relative -top-[3px]">
+            <button
+              title="引用档案库文件 / 智能体"
+              onClick={() => openPicker('files')}
+              className="w-7 h-7 rounded-full border border-[rgba(0,0,0,0.15)] flex items-center justify-center cursor-pointer text-[#86868b] hover:text-[#1d1d1f] hover:border-[rgba(0,0,0,0.3)] hover:bg-[rgba(0,0,0,0.04)] transition-all"
+            >
+              <span className="text-[14px] font-semibold leading-none">@</span>
+            </button>
+
+            {/* @ Picker Popover */}
+            {isPickerOpen && (
+              <div className="absolute bottom-[calc(100%+8px)] left-0 bg-white rounded-2xl w-[460px] max-w-[calc(100vw-40px)] flex flex-col overflow-hidden z-[70]" style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)' }}>
+
+                {/* header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[14px] font-semibold text-[#1d1d1f] whitespace-nowrap">选择文件或者智能体</span>
+                    <div className="flex items-center gap-0.5 bg-[#f2f2f4] rounded-lg p-0.5">
+                      {(['files', 'skills'] as const).map(tab => (
+                        <button
+                          key={tab}
+                          onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors ${activeTab === tab ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#666]'}`}
+                        >
+                          {tab === 'files' ? (
+                            <>
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                              </svg>
+                              文件
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                              </svg>
+                              智能体
+                            </>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {activeTab === 'files' ? (
+                      <a href="/knowledge" className="text-[12px] text-[#2563eb] hover:underline whitespace-nowrap">进入知识库 →</a>
+                    ) : (
+                      <a href="/market" className="text-[12px] text-[#2563eb] hover:underline whitespace-nowrap">智能体市场 →</a>
+                    )}
+                    <button onClick={() => setIsPickerOpen(false)} className="text-[#999] hover:text-[#1d1d1f] transition-colors">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* search */}
+                <div className="px-4 py-2.5 border-b">
+                  <div className="flex items-center gap-2 bg-[#f5f5f7] rounded-lg px-3 py-2">
+                    <svg className="w-3.5 h-3.5 text-[#999] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder={activeTab === 'files' ? '搜索文件名…' : '搜索智能体名称或功能…'}
+                      className="flex-1 bg-transparent outline-none text-[13px] text-[#333] placeholder:text-[#aaa]"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* body: recent only */}
+                <div className="overflow-y-auto p-4" style={{ maxHeight: '280px' }}>
+                  <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wide mb-2">最近使用</p>
+                  {activeTab === 'files' ? (
+                    recentFiles.length === 0 ? (
+                      <div className="flex flex-col items-center py-8 gap-2">
+                        <svg className="w-8 h-8 text-[#ddd]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        <p className="text-sm text-[#bbb] text-center">暂无最近使用的文件</p>
+                        <a href="/knowledge" className="text-[12px] text-[#2563eb] hover:underline">前往知识库选择文件 →</a>
+                      </div>
+                    ) : (
+                      <ul className="flex flex-col gap-1">
+                        {recentFiles.slice(0, 5).map(f => {
+                          const badge = extBadge(f.name);
+                          return (
+                            <li
+                              key={f.path}
+                              onClick={() => insertFileRef(f)}
+                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors"
+                            >
+                              <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-md text-white text-[9px] font-bold" style={{ backgroundColor: badge.color }}>
+                                {badge.label}
+                              </span>
+                              <span className="text-[13px] text-[#333] truncate flex-1">{f.name}</span>
+                              <svg className="w-3.5 h-3.5 text-[#ccc] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )
+                  ) : (
+                    recentSkills.length === 0 ? (
+                      <p className="text-sm text-[#bbb] text-center py-8">暂无最近智能体</p>
+                    ) : (
+                      <ul className="flex flex-col gap-1">
+                        {recentSkills.slice(0, 5).map(s => {
+                          const meta = SKILLS.find(sk => sk.key === s.key);
+                          return (
+                            <li
+                              key={s.key}
+                              onClick={async () => { await runSkill(s.key); setIsPickerOpen(false); }}
+                              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors"
+                            >
+                              <span className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-gradient-to-br ${meta?.color ?? 'from-gray-400 to-gray-600'}`}>
+                                {s.name.slice(0, 2)}
+                              </span>
+                              <span className="text-[13px] text-[#333] truncate flex-1">{s.name}</span>
+                              <svg className="w-3.5 h-3.5 text-[#ccc] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Mode dropdown */}
           <div className="relative inline-block">
@@ -419,193 +549,7 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
         </div>
       </div>
 
-      {/* @ Picker Modal */}
-      {isPickerOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setIsPickerOpen(false)} />
-          <div className="relative bg-white rounded-2xl w-[780px] max-w-[96vw] shadow-2xl overflow-hidden z-[70] flex flex-col">
 
-            {/* header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b">
-              <div className="flex items-center gap-3">
-                <span className="text-[15px] font-semibold text-[#1d1d1f]">选择文件或者智能体</span>
-                <div className="flex items-center gap-0.5 bg-[#f2f2f4] rounded-lg p-0.5">
-                  {(['files', 'skills'] as const).map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[13px] font-medium transition-colors ${activeTab === tab ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#666]'}`}
-                    >
-                      {tab === 'files' ? (
-                        <>
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                          </svg>
-                          文件
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                          </svg>
-                          智能体
-                        </>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <a href="/knowledge" className="text-[13px] text-[#2563eb] hover:underline">进入知识库 →</a>
-                <a href="/market"    className="text-[13px] text-[#2563eb] hover:underline">智能体市场 →</a>
-                <button onClick={() => setIsPickerOpen(false)} className="text-[#666] hover:text-[#1d1d1f] transition-colors">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* search */}
-            <div className="px-5 py-2.5 border-b bg-[#fafafa]">
-              <div className="flex items-center gap-2 bg-white border border-[rgba(0,0,0,0.1)] rounded-lg px-3 py-2">
-                <svg className="w-4 h-4 text-[#999] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={activeTab === 'files' ? '搜索文件名…' : '搜索智能体名称或功能…'}
-                  className="flex-1 bg-transparent outline-none text-sm text-[#333] placeholder:text-[#aaa]"
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            {/* body: 2 columns */}
-            <div className="grid grid-cols-2 divide-x overflow-hidden" style={{ maxHeight: '400px' }}>
-
-              {/* Left: full list */}
-              <div className="overflow-y-auto p-4">
-                <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wide mb-2">
-                  {activeTab === 'files' ? '所有文件' : '所有智能体'}
-                </p>
-                {activeTab === 'files' ? (
-                  filteredFiles.length === 0 ? (
-                    <p className="text-sm text-[#aaa] py-6 text-center">暂无匹配文件</p>
-                  ) : (
-                    <ul className="flex flex-col gap-1">
-                      {filteredFiles.map(f => {
-                        const badge = extBadge(f.name);
-                        return (
-                          <li
-                            key={f.path}
-                            onClick={() => insertFileRef(f)}
-                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors"
-                          >
-                            <span
-                              className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg text-white text-[10px] font-bold"
-                              style={{ backgroundColor: badge.color }}
-                            >
-                              {badge.label}
-                            </span>
-                            <span className="text-[13px] text-[#333] truncate flex-1">{f.name}</span>
-                            <svg className="w-3.5 h-3.5 text-[#bbb] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )
-                ) : (
-                  <ul className="flex flex-col gap-1">
-                    {filteredSkills.map(s => (
-                      <li
-                        key={s.key}
-                        onClick={async () => { await runSkill(s.key); setIsPickerOpen(false); }}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors"
-                      >
-                        <span className={`w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center text-white text-[12px] font-bold bg-gradient-to-br ${s.color}`}>
-                          {s.name.slice(0, 2)}
-                        </span>
-                        <span className="text-[13px] text-[#333] flex-1">{s.name}</span>
-                        <svg className="w-3.5 h-3.5 text-[#bbb] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {/* Right: recent + quick links */}
-              <div className="overflow-y-auto p-4 bg-[#fafafa]">
-                <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wide mb-2">最近使用</p>
-                {activeTab === 'files' ? (
-                  recentFiles.length === 0 ? (
-                    <p className="text-sm text-[#bbb] text-center py-4">暂无最近文件</p>
-                  ) : (
-                    <ul className="flex flex-col gap-1">
-                      {recentFiles.slice(0, 3).map(f => {
-                        const badge = extBadge(f.name);
-                        return (
-                          <li
-                            key={f.path}
-                            onClick={() => insertFileRef(f)}
-                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white cursor-pointer transition-colors"
-                          >
-                            <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-md text-white text-[9px] font-bold" style={{ backgroundColor: badge.color }}>
-                              {badge.label}
-                            </span>
-                            <span className="text-[12px] text-[#555] truncate flex-1">{f.name}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )
-                ) : (
-                  recentSkills.length === 0 ? (
-                    <p className="text-sm text-[#bbb] text-center py-4">暂无最近智能体</p>
-                  ) : (
-                    <ul className="flex flex-col gap-1">
-                      {recentSkills.slice(0, 3).map(s => {
-                        const meta = SKILLS.find(sk => sk.key === s.key);
-                        return (
-                          <li
-                            key={s.key}
-                            onClick={async () => { await runSkill(s.key); setIsPickerOpen(false); }}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white cursor-pointer transition-colors"
-                          >
-                            <span className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-gradient-to-br ${meta?.color ?? 'from-gray-400 to-gray-600'}`}>
-                              {s.name.slice(0, 2)}
-                            </span>
-                            <span className="text-[12px] text-[#555] truncate flex-1">{s.name}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )
-                )}
-                <div className="mt-4 pt-4 border-t border-[rgba(0,0,0,0.06)] flex flex-col gap-2">
-                  <a href="/knowledge" className="flex items-center gap-2 text-[13px] text-[#2563eb] hover:underline">
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                    </svg>
-                    打开知识库
-                  </a>
-                  <a href="/market" className="flex items-center gap-2 text-[13px] text-[#2563eb] hover:underline">
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
-                    </svg>
-                    前往智能体市场
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
