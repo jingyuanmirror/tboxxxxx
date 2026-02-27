@@ -62,13 +62,6 @@ const MODES = [
         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
       </svg>
     ),
-    subTools: [
-      { key: 'web_realtime',   name: '实时热点',   promptPrefix: '请搜索并整理今天{领域}最新热点新闻，按重要性排序并附简评。' },
-      { key: 'web_research',   name: '深度研究',   promptPrefix: '请对{主题}进行深度调研，整理权威来源，输出含背景、现状、趋势与参考资料的报告。' },
-      { key: 'web_competitor', name: '竞品情报',   promptPrefix: '请帮我收集{品牌/产品}的最新公开信息，包括定价、功能、口碑、动态，整理成竞品分析表。' },
-      { key: 'web_academic',   name: '学术文献',   promptPrefix: '请帮我检索关于{研究主题}的近三年重要学术论文，列出标题、摘要、作者和来源。' },
-      { key: 'web_fact_check', name: '事实核查',   promptPrefix: '请帮我核查以下说法的真实性，并给出可信来源：' },
-    ],
   },
   {
     name: 'Excel 分析', iconKey: 'excel', isSpecial: false,
@@ -80,13 +73,6 @@ const MODES = [
         <line x1="16" y1="17" x2="8" y2="17" />
       </svg>
     ),
-    subTools: [
-      { key: 'excel_chart',   name: '数据可视化', promptPrefix: '请读取我上传的数据文件，生成合适的可视化图表，并简要说明数据趋势。', fileHint: '.xlsx/.csv', fileRequired: true },
-      { key: 'excel_finance', name: '财务分析',   promptPrefix: '请分析我上传的财务报表，计算关键财务指标（增长率、毛利率、ROE 等），并标注异常点。', fileHint: '.xlsx', fileRequired: true },
-      { key: 'excel_clean',   name: '数据清洗',   promptPrefix: '请检查并清洗我上传的数据表，处理缺失值、重复行和格式问题，输出清洗后的文件。', fileHint: '.xlsx/.csv', fileRequired: true },
-      { key: 'excel_pivot',   name: '透视表',     promptPrefix: '请帮我对上传的数据表按{维度}进行数据透视，生成汇总表和分析说明。', fileHint: '.xlsx', fileRequired: true },
-      { key: 'excel_formula', name: '公式/宏生成', promptPrefix: '请根据我的需求帮我生成 Excel 公式或 VBA 宏代码：' },
-    ],
   },
   {
     name: 'Code 生成', iconKey: 'code', isSpecial: false,
@@ -96,14 +82,6 @@ const MODES = [
         <polyline points="8 6 2 12 8 18" />
       </svg>
     ),
-    subTools: [
-      { key: 'code_frontend', name: '前端页面',   promptPrefix: '请根据我的描述生成一个{框架}前端页面/组件，包含完整代码和样式。' },
-      { key: 'code_api',      name: 'API 接口',   promptPrefix: '请帮我设计并生成{语言/框架}的 API 接口代码，包含路由、参数校验和错误处理。' },
-      { key: 'code_review',   name: '代码审查',   promptPrefix: '请对以下代码进行审查，从安全性、性能、可读性、最佳实践角度提出改进建议：' },
-      { key: 'code_test',     name: '单元测试',   promptPrefix: '请为以下代码生成完整的单元测试，覆盖正常路径、边界条件和异常情况：' },
-      { key: 'code_script',   name: '脚本自动化', promptPrefix: '请帮我编写一个{语言}脚本实现以下自动化任务：' },
-      { key: 'code_debug',    name: '错误排查',   promptPrefix: '我遇到了以下错误，请帮我分析原因并给出修复方案：' },
-    ],
   },
   {
     name: 'Mail 撰写', iconKey: 'mail', isSpecial: false,
@@ -113,13 +91,6 @@ const MODES = [
         <polyline points="22,6 12,13 2,6" />
       </svg>
     ),
-    subTools: [
-      { key: 'mail_business',  name: '商务洽谈',   promptPrefix: '请帮我撰写一封商务邮件，主题：{主题}，收件人：{身份}，语气专业正式。' },
-      { key: 'mail_complaint', name: '客诉回复',   promptPrefix: '请帮我撰写一封客户投诉回复邮件，问题描述：{描述}，需要表达歉意并提供解决方案。' },
-      { key: 'mail_follow_up', name: '跟进邀约',   promptPrefix: '请帮我撰写一封跟进邮件，提醒对方{事项}，语气友好且不失专业。' },
-      { key: 'mail_internal',  name: '内部通知',   promptPrefix: '请帮我撰写一封内部通知邮件，内容：{内容}，适合发送给全体员工/团队。' },
-      { key: 'mail_cold',      name: '冷启动开发信', promptPrefix: '请帮我撰写一封冷邮件，向{目标群体}介绍{产品/服务}，突出价值主张，引发回复兴趣。' },
-    ],
   },
   {
     name: '小红书', iconKey: 'xiaohongshu', isSpecial: true,
@@ -189,7 +160,6 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
   const [inputValue, setInputValue]       = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef  = useRef<HTMLTextAreaElement>(null);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedMode, setSelectedMode]     = useState<typeof MODES[0] | null>(null);
@@ -298,7 +268,6 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
   const handleModeSelect = (mode: typeof MODES[0]) => {
     setSelectedMode(prev => prev?.iconKey === mode.iconKey ? null : mode);
     setSelectedSubTool(null);
-    setInputValue('');
     setIsDropdownOpen(false);
   };
 
@@ -355,43 +324,18 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
         </div>
       )}
 
-      {/* Textarea with inline token highlighting via overlay */}
-      <div className="relative w-full flex-1 min-h-[60px] mb-1.5">
-        {/* Mirror layer: same font metrics, renders {tokens} highlighted */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 font-['Inter'] text-base leading-normal pointer-events-none select-none overflow-hidden"
-          style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            lineHeight: '1.5',
-          }}
-          dangerouslySetInnerHTML={{
-            __html: inputValue
-              ? inputValue
-                  .replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/\n/g, '<br/>')
-                  .replace(
-                    /\{([^}]+)\}/g,
-                    '<mark style="background:rgba(37,99,235,0.10);color:#1d4ed8;border-radius:4px;padding:1px 3px;font-style:normal;border:1px solid rgba(37,99,235,0.25);">$&</mark>'
-                  )
-              : `<span style="color:#a1a1a6;">请直接吩咐任务：例如，将芯片报告初稿转化为高管演示 PPT...</span>`
-          }}
-        />
-        {/* Actual textarea: transparent text + visible caret */}
-        <textarea
-          ref={textareaRef}
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
-          className="relative w-full border-none bg-transparent font-['Inter'] text-base resize-none outline-none min-h-[60px] pt-0"
-          style={{ color: 'transparent', caretColor: '#1d1d1f', lineHeight: '1.5' }}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-          }}
-        />
-      </div>
+      {/* Textarea */}
+      <textarea
+        value={inputValue}
+        onChange={e => setInputValue(e.target.value)}
+        className="w-full border-none bg-transparent font-['Inter'] text-base leading-normal text-[#1d1d1f] resize-none outline-none flex-1 mb-1.5 pt-0 placeholder:text-[#a1a1a6] placeholder:font-normal"
+        placeholder={selectedSubTool ? selectedSubTool.promptPrefix : '请直接吩咐任务：例如，将芯片报告初稿转化为高管演示 PPT...'}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+        }}
+      />
+
+      
 
       {/* Toolbar */}
       <div className="flex justify-between items-center">
@@ -411,12 +355,7 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
           </label>
 
           {selectedSubTool?.fileRequired && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[11px] font-medium relative -top-[3px]">
-              <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-              </svg>
-              {selectedSubTool.fileHint || '文件'}
-            </div>
+            <span className="text-[12px] text-red-500 ml-1">需要上传 {selectedSubTool.fileHint || '文件'}</span>
           )}
 
           {/* @ Picker */}
@@ -600,7 +539,7 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
             <div className="flex items-center gap-1.5 relative -top-[3px] text-[#1a73e8]">
               <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">{selectedMode.icon()}</span>
               <span className="text-[13px] font-medium">{selectedMode.name}</span>
-              <button onClick={() => { setSelectedMode(null); setSelectedSubTool(null); }} className="w-4 h-4 flex items-center justify-center hover:text-[#174ea6] cursor-pointer transition-colors ml-0.5">
+              <button onClick={() => setSelectedMode(null)} className="w-4 h-4 flex items-center justify-center hover:text-[#174ea6] cursor-pointer transition-colors ml-0.5">
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -656,33 +595,7 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
         </div>
       </div>
 
-      {/* SubTool pill bar — shown below toolbar when a mode with subTools is active */}
-      {selectedMode && (selectedMode as { subTools?: SubTool[] }).subTools?.length ? (
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {((selectedMode as { subTools?: SubTool[] }).subTools ?? []).map((st: SubTool) => (
-            <button
-              key={st.key}
-              onClick={() => {
-                const isActive = selectedSubTool?.key === st.key;
-                setSelectedSubTool(isActive ? null : st);
-                setInputValue(isActive ? '' : st.promptPrefix);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium border transition-all whitespace-nowrap flex-shrink-0
-                ${ selectedSubTool?.key === st.key
-                  ? 'bg-[#1a73e8] text-white border-[#1a73e8] shadow-sm'
-                  : 'bg-white text-[#555] border-[rgba(0,0,0,0.12)] hover:border-[#1a73e8] hover:text-[#1a73e8]'
-                }`}
-            >
-              {st.name}
-              {selectedSubTool?.key === st.key && (
-                <svg className="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </button>
-          ))}
-        </div>
-      ) : null}
+
     </div>
   );
 }
