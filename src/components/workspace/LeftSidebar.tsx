@@ -85,10 +85,10 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
         {/* 档案库 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div onClick={() => onOpenView && onOpenView('knowledge')} className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-pointer">档案库</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">档案库</div>
             <div className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black" title="Upload File">＋</div>
           </div>
-          <div className="nav-item">最近上传</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('knowledge')}>最近上传</div>
           <div className="nav-item">我的作品</div>
           <div className="nav-item">我的模版</div>
         </div>

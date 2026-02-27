@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f6]">
-      {!isChatOpen && (
+      {!isChatOpen && activeView !== 'knowledge' && (
         <Header 
           onToggleRightSidebar={() => setIsRightSidebarVisible(!isRightSidebarVisible)}
           isRightSidebarVisible={isRightSidebarVisible}
@@ -35,7 +35,7 @@ export default function Home() {
         />
       )}
       
-      <div className={`flex flex-1 ${isChatOpen ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
+      <div className={`flex flex-1 ${isChatOpen || activeView === 'knowledge' ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
         <LeftSidebar 
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}

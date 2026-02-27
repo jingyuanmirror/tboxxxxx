@@ -129,23 +129,21 @@ export default function KnowledgeView() {
   return (
     <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-      {/* ── BREADCRUMB ── */}
-      <div className="flex items-center px-6 py-4 border-b border-gray-100">
-        <nav className="flex items-center gap-1.5 text-sm">
-          <FolderOpen className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-400">知识库</span>
-          <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90" />
-          <span className="font-medium text-gray-900">上传的内容</span>
-        </nav>
+      {/* ── PAGE TITLE ── */}
+      <div className="px-6 pt-6 pb-4 border-b border-gray-100 bg-white">
+        <div className="max-w-full">
+          <div className="text-sm text-gray-400 mb-1">我的上传</div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight font-[family-name:var(--font-playfair-display)]">My Uploads</h1>
+        </div>
       </div>
 
       {/* ── MAIN CONTENT ── */}
       <div className="flex flex-col">
 
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-gray-100">
+          <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-gray-100">
             {/* Search */}
-            <div className="flex items-center gap-2 flex-1 min-w-[160px] max-w-[300px] bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-100 focus-within:border-gray-300 transition-colors">
+            <div className="flex items-center gap-2 flex-1 min-w-[160px] max-w-[380px] bg-white rounded-lg px-4 py-2 border border-gray-100 shadow-sm focus-within:border-gray-300 transition-colors">
               <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <input
                 value={search}
@@ -166,7 +164,7 @@ export default function KnowledgeView() {
                 onClick={() => setShowAlbumMenu(v => !v)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors
                   ${selectedAlbum !== 'all'
-                    ? 'border-gray-400 bg-gray-100 text-gray-900'
+                    ? 'border-gray-300 bg-white text-gray-900 shadow-sm'
                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
               >
                 {selectedAlbumObj?.color && selectedAlbum !== 'all' && (
@@ -179,7 +177,7 @@ export default function KnowledgeView() {
                 <ChevronDown className="w-3 h-3" />
               </button>
               {showAlbumMenu && (
-                <div className="absolute left-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-40">
+                <div className="absolute left-0 top-full mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-40">
                   <button
                     onClick={() => { setSelectedAlbum('all'); setShowAlbumMenu(false); }}
                     className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 transition-colors
@@ -393,7 +391,7 @@ export default function KnowledgeView() {
 
             {/* GRID VIEW */}
             {filteredFiles.length > 0 && viewMode === 'grid' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {filteredFiles.map(file => {
                   const badge = FORMAT_BADGE[file.format];
                   const isSelected = selectedIds.has(file.id);
@@ -421,9 +419,9 @@ export default function KnowledgeView() {
                       </div>
 
                       {/* Thumbnail */}
-                      <div className="h-28 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden">
-                        <div style={{ color: badge.text, opacity: 0.55 }}>
-                          <FileIcon format={file.format} className="w-10 h-10" />
+                      <div className="h-30 bg-gradient-to-br from-white to-gray-50 flex items-center justify-center relative overflow-hidden">
+                        <div className="text-gray-700 opacity-60">
+                          <FileIcon format={file.format} className="w-10 h-10 text-current" />
                         </div>
                         {/* Hover overlay */}
                         <div className={`absolute inset-0 bg-black/10 flex items-center justify-center gap-2 transition-opacity duration-150
@@ -446,21 +444,21 @@ export default function KnowledgeView() {
                       </div>
 
                       {/* Card info */}
-                      <div className="p-3">
+                      <div className="p-4">
                         <p className="text-sm font-medium text-gray-900 truncate mb-2 leading-snug" title={file.name}>
                           {file.name}
                         </p>
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded select-none bg-gray-100 text-gray-600">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-gray-100 bg-white text-gray-800">
                             {file.format}
                           </span>
-                          <span className="text-[11px] text-gray-400">{fmtDate(file.uploadedAt).slice(5)}</span>
+                          <span className="text-[12px] text-gray-500">{fmtDate(file.uploadedAt).slice(5)}</span>
                         </div>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
+                        <div className="flex flex-wrap gap-2 mt-2">
                           {(() => {
                             const album = albums.find(a => a.id === file.album);
                             return album ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-gray-200 text-gray-500 leading-tight">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full border border-gray-100 text-gray-800 bg-white leading-tight">
                                 {album.name}
                               </span>
                             ) : null;
@@ -479,7 +477,7 @@ export default function KnowledgeView() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-left">
-                      <th className="py-2.5 px-2 w-8">
+                      <th className="py-3 px-2 w-8">
                         <div
                           className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors
                             ${allSelected ? 'bg-gray-900 border-gray-900' : 'border-gray-300 hover:border-gray-500'}`}
@@ -489,26 +487,26 @@ export default function KnowledgeView() {
                         </div>
                       </th>
                       <th
-                        className="py-2.5 px-2 font-medium text-gray-500 cursor-pointer hover:text-gray-800 transition-colors select-none"
+                        className="py-3 px-2 font-medium text-gray-600 cursor-pointer hover:text-gray-800 transition-colors select-none"
                         onClick={() => toggleSort('name')}
                       >
                         名称 <SortIcon field="name" active={sortField === 'name'} dir={sortDir} />
                       </th>
                       <th
-                        className="py-2.5 px-2 font-medium text-gray-500 cursor-pointer hover:text-gray-800 transition-colors select-none"
+                        className="py-3 px-2 font-medium text-gray-600 cursor-pointer hover:text-gray-800 transition-colors select-none"
                         onClick={() => toggleSort('format')}
                       >
                         格式 <SortIcon field="format" active={sortField === 'format'} dir={sortDir} />
                       </th>
-                      <th className="py-2.5 px-2 font-medium text-gray-500 hidden md:table-cell">所属专辑</th>
+                      <th className="py-3 px-2 font-medium text-gray-600 hidden md:table-cell">所属专辑</th>
                       <th
-                        className="py-2.5 px-2 font-medium text-gray-500 cursor-pointer hover:text-gray-800 transition-colors select-none"
+                        className="py-3 px-2 font-medium text-gray-600 cursor-pointer hover:text-gray-800 transition-colors select-none"
                         onClick={() => toggleSort('uploadedAt')}
                       >
                         上传时间 <SortIcon field="uploadedAt" active={sortField === 'uploadedAt'} dir={sortDir} />
                       </th>
                       <th
-                        className="py-2.5 px-2 font-medium text-gray-500 cursor-pointer hover:text-gray-800 transition-colors select-none hidden sm:table-cell"
+                        className="py-3 px-2 font-medium text-gray-600 cursor-pointer hover:text-gray-800 transition-colors select-none hidden sm:table-cell"
                         onClick={() => toggleSort('size')}
                       >
                         大小 <SortIcon field="size" active={sortField === 'size'} dir={sortDir} />
@@ -523,10 +521,10 @@ export default function KnowledgeView() {
                       return (
                         <tr
                           key={file.id}
-                          className={`border-b border-gray-50 group transition-colors
-                            ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50/70'}`}
+                          className={`border-b border-gray-100 group transition-colors
+                            ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
                         >
-                          <td className="py-2.5 px-2">
+                          <td className="py-3 px-2">
                             <div
                               className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors
                                 ${isSelected ? 'bg-gray-900 border-gray-900' : 'border-gray-200 group-hover:border-gray-400'}`}
@@ -535,40 +533,40 @@ export default function KnowledgeView() {
                               {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                             </div>
                           </td>
-                          <td className="py-2.5 px-2">
+                          <td className="py-3 px-2">
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <span style={{ color: badge.text, opacity: 0.65 }}>
-                                <FileIcon format={file.format} />
+                              <span className="text-gray-700 opacity-60">
+                                <FileIcon format={file.format} className="w-5 h-5 text-current" />
                               </span>
                               <span className="font-medium text-gray-900 truncate max-w-[180px]" title={file.name}>
                                 {file.name}
                               </span>
                             </div>
                           </td>
-                          <td className="py-2.5 px-2">
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
+                          <td className="py-3 px-2">
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-gray-100 bg-white text-gray-800">
                               {file.format}
                             </span>
                           </td>
-                          <td className="py-2.5 px-2 hidden md:table-cell">
+                          <td className="py-3 px-2 hidden md:table-cell">
                             <div className="flex flex-wrap gap-1">
                               {(() => {
                                 const album = albums.find(a => a.id === file.album);
                                 return album ? (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-gray-200 text-gray-700">
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full border border-gray-100 text-gray-800 bg-white">
                                     {album.name}
                                   </span>
                                 ) : null;
                               })()}
                             </div>
                           </td>
-                          <td className="py-2.5 px-2 text-gray-700 text-xs whitespace-nowrap">
+                          <td className="py-3 px-2 text-gray-600 text-sm whitespace-nowrap">
                             {fmtDate(file.uploadedAt)}
                           </td>
-                          <td className="py-2.5 px-2 text-gray-700 text-xs whitespace-nowrap hidden sm:table-cell">
+                          <td className="py-3 px-2 text-gray-600 text-sm whitespace-nowrap hidden sm:table-cell">
                             {formatFileSize(file.size)}
                           </td>
-                          <td className="py-2.5 px-2">
+                          <td className="py-3 px-2">
                             <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100">
                               <MoreHorizontal className="w-4 h-4 text-gray-400" />
                             </button>

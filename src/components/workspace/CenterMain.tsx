@@ -19,8 +19,8 @@ interface ConfirmItem {
 }
 
 const initialItems: ConfirmItem[] = [
-  { id: 1, text: '确认 Q4 推广方案预算分配表（附件已更新）', status: 'pending' },
-  { id: 2, text: '审批芯片市场竞品分析报告终稿', status: 'pending' },
+  { id: 1, text: '本周三上海的会议改成了下午，我将给你换一班回来的航班，但是预算会提高200-400元', status: 'pending' },
+  { id: 2, text: '我发现你的信用卡有接机权益没有用，我将在你本次出差时使用该权益', status: 'pending' },
 ];
 
 interface CenterMainProps {
@@ -127,16 +127,16 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
             {/* Home greeting */}
             <div className="bg-none backdrop-blur-none border-none shadow-none p-0 w-full max-w-[950px] leading-relaxed mb-0 self-start rounded-none">
               <div className="text-[13px] text-[#6e6e73] mb-2 font-medium block opacity-80">周四，04:22 PM</div>
-              <div className="font-playfair-display text-[28px] font-bold text-[#1d1d1f] mb-2.5 leading-[1.3] pb-3 border-b border-dashed border-[rgba(0,0,0,0.1)] w-full flex items-center gap-2">
+              <div className="font-[family-name:var(--font-dancing-script)] text-[24px] font-semibold text-[#1d1d1f] mb-2.5 leading-[1.5] pb-3 border-b border-dashed border-[rgba(0,0,0,0.1)] w-full flex items-center gap-3">
                 <img
                   src="/mascot.png"
                   alt="Tbox mascot"
-                  className="w-[52px] h-[52px] object-contain flex-shrink-0"
+                  className="w-[42px] h-[42px] object-contain flex-shrink-0"
                 />
                 Hi Lisa，午后好。今天天气真不错，适合深度思考
               </div>
               <div className="text-base text-[#444] pt-0 border-t-0 mt-0 leading-[1.7]">
-                昨天的《Q4 推广方案》已经存档。
+                昨天的《Q4 推广方案》已经完成，今天会帮你完成本周周报。
               </div>
 
               {/* Pending Confirmation List */}
