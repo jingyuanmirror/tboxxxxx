@@ -27,6 +27,7 @@ const initialItems: ConfirmItem[] = [
 interface CenterMainProps {
   isLeftSidebarCollapsed: boolean;
   activeView?: 'home' | 'knowledge' | 'scheduled' | 'market';
+  marketInitialTab?: 'agents' | 'skills';
   onCloseScheduledTasks?: () => void;
   isChatOpen?: boolean;
   chatInitialMessage?: string;
@@ -34,7 +35,7 @@ interface CenterMainProps {
   onCloseChat?: () => void;
 }
 
-export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat }: CenterMainProps) {
+export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat }: CenterMainProps) {
   const [items, setItems] = useState<ConfirmItem[]>(initialItems);
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
@@ -118,7 +119,7 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
       {/* Market view: full width */}
       {activeView === 'market' && (
         <div className="w-full relative z-[2]">
-          <MarketView />
+          <MarketView initialTab={marketInitialTab} />
         </div>
       )}
 

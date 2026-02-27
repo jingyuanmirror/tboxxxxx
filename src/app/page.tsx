@@ -10,6 +10,7 @@ export default function Home() {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarVisible, setIsRightSidebarVisible] = useState(true);
   const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'>('home');
+  const [marketInitialTab, setMarketInitialTab] = useState<'agents'|'skills'|undefined>(undefined);
 
   // Chat state lifted here so Header & RightSidebar can be hidden
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -39,12 +40,18 @@ export default function Home() {
         <LeftSidebar 
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
-          onOpenView={(v) => setActiveView(v as 'home'|'knowledge'|'scheduled'|'market')}
+          onOpenView={(v, tab) => {
+            // ensure initial tab is set before switching view so MarketView mounts with correct tab
+            if (v === 'market' && tab) setMarketInitialTab(tab);
+            else setMarketInitialTab(undefined);
+            setActiveView(v as 'home'|'knowledge'|'scheduled'|'market');
+          }}
         />
 
         <CenterMain
           isLeftSidebarCollapsed={isLeftSidebarCollapsed}
           activeView={activeView}
+          marketInitialTab={marketInitialTab}
           onCloseScheduledTasks={() => setActiveView('home')}
           isChatOpen={isChatOpen}
           chatInitialMessage={chatInitialMessage}

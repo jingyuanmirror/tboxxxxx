@@ -3,15 +3,16 @@
 import React, { useState, useMemo } from 'react';
 import {
   Star, Users, Zap, Search, Check, X, Store, ArrowRight, TrendingUp, Clock, Package,
-  Globe, BarChart2, PenLine, FileText, Link2, Brain, Code2, Box, LayoutList,
+  Globe, BarChart2, PenLine, FileText, Link2, Brain, Code2, Box, LayoutList, Briefcase,
 } from 'lucide-react';
 import {
   mockAgents, mockSkills, ROLE_LABELS, CATEGORY_LABELS,
   getLowestPrice, formatPrice,
   type MarketAgent, type MarketSkill, type AgentRole, type SkillCategory, type UserReview,
 } from '@/lib/marketMock';
+import TasksView from './TasksView';
 
-type MarketTab = 'agents' | 'skills';
+type MarketTab = 'agents' | 'skills' | 'tasks';
 type SortMode = 'hot' | 'new' | 'rating';
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -537,8 +538,13 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
 }
 
 // ─── Main MarketView ──────────────────────────────────────────
-export default function MarketView() {
-  const [tab, setTab] = useState<MarketTab>('agents');
+export default function MarketView({ initialTab }: { initialTab?: MarketTab }) {
+  const [tab, setTab] = useState<MarketTab>(initialTab ?? 'agents');
+
+  // If parent updates initialTab after mount (e.g. user clicked sidebar), sync it.
+  React.useEffect(() => {
+    if (initialTab && initialTab !== tab) setTab(initialTab);
+  }, [initialTab]);
   const [search, setSearch] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('hot');
   const [roleFilter, setRoleFilter] = useState<AgentRole | 'all'>('all');
@@ -613,10 +619,10 @@ export default function MarketView() {
           </span>
         </div>
         <h1 className="text-[34px] font-black text-[#1a1a1a] mb-2 tracking-tight leading-none">
-          {tab === 'agents' ? '雇一位 AI 助手' : '为 你的TBOX 装备技能'}
+          {tab === 'agents' ? '雇一位 AI 助手' : tab === 'skills' ? '为你的 TBOX 装备技能' : '任务招募广场'}
         </h1>
         <p className="text-[15px] text-[#999] mb-8">
-          {tab === 'agents' ? '发现各领域顶尖 AI Freelancer，立即雇佣' : '挑选skill模块，一键挂载，解锁更强的，更适合你的 Agent'}
+          {tab === 'agents' ? '发现各领域顶尖 AI Freelancer，立即雇佣' : tab === 'skills' ? '挑选 Skill 模块，一键挂载，解锁更强的 Agent' : '发布你的任务，让最合适的 Agent 来接单'}
         </p>
 
         {/* Search bar */}
@@ -624,7 +630,7 @@ export default function MarketView() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#bbb]" />
           <input
             type="text"
-            placeholder={tab === 'agents' ? 'Find a freelancer...' : '搜索技能...'}
+            placeholder={tab === 'agents' ? 'Find a freelancer...' : tab === 'skills' ? '搜索技能...' : '搜索任务、标签…'}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-12 pr-5 py-4 text-[15px] bg-white rounded-2xl border border-[#e8e8e8] outline-none focus:border-[#ccc] transition-colors placeholder:text-[#c8c8c8] shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
@@ -645,11 +651,20 @@ export default function MarketView() {
           >
             <Package className="w-3.5 h-3.5" /> 装备铺
           </button>
+          <button
+            onClick={() => { setTab('tasks'); setSearch(''); }}
+            className={`flex items-center gap-1.5 pb-3 text-[14px] font-semibold transition-all border-b-2 -mb-px ${tab === 'tasks' ? 'border-[#f4845f] text-[#1a1a1a]' : 'border-transparent text-[#999] hover:text-[#555]'}`}
+          >
+            <Briefcase className="w-3.5 h-3.5" /> 任务招募
+          </button>
         </div>
       </div>
 
-      {/* ── Filter + Sort Bar ── */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
+      {/* ── Tasks View ── */}
+      {tab === 'tasks' && <TasksView search={search} onSearchChange={setSearch} />}
+
+      {/* ── Filter + Sort Bar (agents / skills only) ── */}
+      {tab !== 'tasks' && <div className="flex items-center gap-3 mb-5 flex-wrap">
         <div className="flex gap-2 flex-1 overflow-x-auto pb-0.5 flex-nowrap">
           {tab === 'agents'
             ? agentRoles.map(role => (
@@ -693,34 +708,38 @@ export default function MarketView() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
-      {/* Result count */}
-      <div className="text-[12px] text-[#bbb] mb-5">
-        {tab === 'agents' ? `${filteredAgents.length} 位 Agent` : `${filteredSkills.length} 项技能`}
-      </div>
+      {/* Result count + Card Grid (agents / skills only) */}
+      {tab !== 'tasks' && (
+        <>
+          <div className="text-[12px] text-[#bbb] mb-5">
+            {tab === 'agents' ? `${filteredAgents.length} 位 Agent` : `${filteredSkills.length} 项技能`}
+          </div>
 
-      {/* ── Card Grid ── */}
-      {tab === 'agents' ? (
-        filteredAgents.length === 0 ? (
-          <div className="text-center py-20 text-[#bbb] text-[14px]">没有找到匹配的 Agent</div>
-        ) : (
-          <div className="grid grid-cols-3 gap-5 pb-12">
-            {filteredAgents.map(agent => (
-              <AgentCard key={agent.id} agent={agent} onClick={() => setSelectedAgent(agent)} onHire={() => toggleHire(agent.id)} hired={hiredAgentIds.has(agent.id)} />
-            ))}
-          </div>
-        )
-      ) : (
-        filteredSkills.length === 0 ? (
-          <div className="text-center py-20 text-[#bbb] text-[14px]">没有找到匹配的技能</div>
-        ) : (
-          <div className="grid grid-cols-3 gap-5 pb-12">
-            {filteredSkills.map(skill => (
-              <SkillCard key={skill.id} skill={skill} onClick={() => setSelectedSkill(skill)} onMount={() => toggleMount(skill.id)} mounted={mountedSkillIds.has(skill.id)} />
-            ))}
-          </div>
-        )
+          {/* ── Card Grid ── */}
+          {tab === 'agents' ? (
+            filteredAgents.length === 0 ? (
+              <div className="text-center py-20 text-[#bbb] text-[14px]">没有找到匹配的 Agent</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-5 pb-12">
+                {filteredAgents.map(agent => (
+                  <AgentCard key={agent.id} agent={agent} onClick={() => setSelectedAgent(agent)} onHire={() => toggleHire(agent.id)} hired={hiredAgentIds.has(agent.id)} />
+                ))}
+              </div>
+            )
+          ) : (
+            filteredSkills.length === 0 ? (
+              <div className="text-center py-20 text-[#bbb] text-[14px]">没有找到匹配的技能</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-5 pb-12">
+                {filteredSkills.map(skill => (
+                  <SkillCard key={skill.id} skill={skill} onClick={() => setSelectedSkill(skill)} onMount={() => toggleMount(skill.id)} mounted={mountedSkillIds.has(skill.id)} />
+                ))}
+              </div>
+            )
+          )}
+        </>
       )}
 
       {/* ── Detail Modals ── */}
