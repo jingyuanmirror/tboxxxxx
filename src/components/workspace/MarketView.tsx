@@ -2,149 +2,251 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  Star, Users, Zap, Search, ChevronRight, Check, X,
-  ArrowLeft, Sparkles, TrendingUp, Clock, Filter,
+  Star, Users, Zap, Search, Check, X, Store, ArrowRight, TrendingUp, Clock, Package,
+  Globe, BarChart2, PenLine, FileText, Link2, Brain, Code2, Box, LayoutList,
 } from 'lucide-react';
 import {
   mockAgents, mockSkills, ROLE_LABELS, CATEGORY_LABELS,
   getLowestPrice, formatPrice,
-  type MarketAgent, type MarketSkill, type AgentRole, type SkillCategory,
+  type MarketAgent, type MarketSkill, type AgentRole, type SkillCategory, type UserReview,
 } from '@/lib/marketMock';
 
-// ─── Sub-tab type ─────────────────────────────────────────────
 type MarketTab = 'agents' | 'skills';
 type SortMode = 'hot' | 'new' | 'rating';
 
-// ─── Star Rating Display ──────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────
 function StarRating({ score, count }: { score: number; count: number }) {
   return (
     <span className="flex items-center gap-1 text-[12px] text-[#8e8e93]">
       <Star className="w-3 h-3 fill-[#f5a623] text-[#f5a623]" />
-      <span className="font-medium text-[#1d1d1f]">{score.toFixed(1)}</span>
+      <span className="font-semibold text-[#1d1d1f]">{score.toFixed(1)}</span>
       <span>({count})</span>
     </span>
   );
 }
 
-// ─── Price Badge ──────────────────────────────────────────────
-function PriceBadge({ label, highlight }: { label: string; highlight?: boolean }) {
-  if (label === '免费') {
-    return (
-      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f0fdf4] text-[#16a34a]">
-        免费
-      </span>
-    );
-  }
+// ─── My Panel ───────────────────────────────────────────────
+function MyPanel({
+  open, onClose,
+  hiredAgents, mountedSkillIds,
+}: {
+  open: boolean; onClose: () => void;
+  hiredAgents: MarketAgent[]; mountedSkillIds: Set<string>;
+}) {
+  const mountedSkills = mockSkills.filter(s => mountedSkillIds.has(s.id));
   return (
-    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${highlight ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f]'}`}>
-      {label}
-    </span>
+    <>
+      {/* Backdrop */}
+      {open && <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" onClick={onClose} />}
+      {/* Drawer */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[340px] bg-white z-50 shadow-2xl flex flex-col transition-transform duration-300 ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f0f0]">
+          <span className="text-[15px] font-bold text-[#1a1a1a]">我的清单</span>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#f5f5f7] transition-colors">
+            <X className="w-4 h-4 text-[#8e8e93]" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+          {/* Hired agents */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="w-3.5 h-3.5 text-[#f4845f]" />
+              <span className="text-[12px] font-bold text-[#8e8e93] uppercase tracking-wide">我的雇佣</span>
+              <span className="ml-auto text-[11px] text-[#bbb]">{hiredAgents.length} 位</span>
+            </div>
+            {hiredAgents.length === 0 ? (
+              <p className="text-[13px] text-[#bbb] py-4 text-center">还没有雇佣任何 Agent</p>
+            ) : (
+              <div className="space-y-2">
+                {hiredAgents.map(agent => (
+                  <div key={agent.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#fafafa] border border-[#f0f0f0]">
+                    <AgentAvatar agent={agent} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-semibold text-[#1a1a1a] truncate">{agent.name}</div>
+                      <div className="text-[11px] text-[#9a9a9a]">{ROLE_LABELS[agent.role]}</div>
+                    </div>
+                    <span className="text-[11px] font-semibold text-[#f4845f]">{getLowestPrice(agent.pricing)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Mounted skills */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="w-3.5 h-3.5 text-[#f4845f]" />
+              <span className="text-[12px] font-bold text-[#8e8e93] uppercase tracking-wide">我的挂载</span>
+              <span className="ml-auto text-[11px] text-[#bbb]">{mountedSkills.length} 项</span>
+            </div>
+            {mountedSkills.length === 0 ? (
+              <p className="text-[13px] text-[#bbb] py-4 text-center">还没有挂载任何技能</p>
+            ) : (
+              <div className="space-y-2">
+                {mountedSkills.map(skill => {
+                  const Icon = CATEGORY_ICONS[skill.category] ?? Box;
+                  return (
+                    <div key={skill.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#fafafa] border border-[#f0f0f0]">
+                      <div className="w-9 h-9 rounded-xl bg-[#fff5f2] flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-[#f4845f]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-semibold text-[#1a1a1a] truncate">{skill.name}</div>
+                        <div className="text-[11px] text-[#9a9a9a]">{CATEGORY_LABELS[skill.category]}</div>
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#1d1d1f]">{getLowestPrice(skill.pricing)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
-// ─── Agent Card ───────────────────────────────────────────────
-function AgentCard({ agent, onClick }: { agent: MarketAgent; onClick: () => void }) {
+// ─── Agent Avatar (reusable) ───────────────────────────────────
+function AgentAvatar({ agent, size = 52 }: { agent: MarketAgent; size?: number }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div
+      style={{ width: size, height: size }}
+      className="rounded-full overflow-hidden ring-2 ring-white shadow-md flex-shrink-0 bg-[#f5f5f7] flex items-center justify-center"
+    >
+      {agent.avatarUrl && !err ? (
+        <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" onError={() => setErr(true)} />
+      ) : (
+        <span style={{ fontSize: size * 0.45 }}>{agent.avatar}</span>
+      )}
+    </div>
+  );
+}
+
+// ─── Agent Card ─── NexusGPT-inspired: centered, circular avatar, tinted desc box
+function AgentCard({ agent, onClick, onHire, hired }: { agent: MarketAgent; onClick: () => void; onHire: () => void; hired: boolean }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl p-5 cursor-pointer transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 relative overflow-hidden group"
-      style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}
+      className="group bg-white rounded-2xl border border-[#ebebeb] p-5 flex flex-col cursor-pointer transition-all duration-200 hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)] hover:-translate-y-1 relative overflow-hidden"
     >
-      {/* Featured / New badge */}
-      {agent.isFeatured && (
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#fff3cd] text-[#b45309]">
-          精选
-        </span>
-      )}
-      {agent.isNew && !agent.isFeatured && (
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#eff6ff] text-[#2563eb]">
-          新上架
-        </span>
-      )}
-
-      {/* Avatar + name */}
+      {/* Top row: avatar + name/role + hire button */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-11 h-11 rounded-xl bg-[#f5f5f7] flex items-center justify-center text-2xl flex-shrink-0">
-          {agent.avatar}
+        <AgentAvatar agent={agent} size={52} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[15px] font-bold text-[#1a1a1a] leading-tight truncate">{agent.name}</h3>
+            {agent.isFeatured && (
+              <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1d1d1f] text-white">精选</span>
+            )}
+            {agent.isNew && !agent.isFeatured && (
+              <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6a6e73] border border-[#e5e5ea]">新上架</span>
+            )}
+          </div>
+          <p className="text-[12px] text-[#9a9a9a] mt-0.5">{ROLE_LABELS[agent.role]}</p>
         </div>
-        <div className="min-w-0">
-          <div className="font-semibold text-[14px] text-[#1d1d1f] truncate">{agent.name}</div>
-          <div className="text-[11px] text-[#8e8e93] mt-0.5">{ROLE_LABELS[agent.role]}</div>
-        </div>
+        <button
+          onClick={e => { e.stopPropagation(); onHire(); }}
+          className={`flex-shrink-0 px-3.5 py-1.5 text-[12px] font-semibold rounded-xl transition-all ${
+            hired ? 'bg-[#f5f5f7] text-[#8e8e93]' : 'bg-[#f4845f] text-white hover:bg-[#e8714d]'
+          }`}
+        >
+          {hired ? '已雇佣' : '雇佣'}
+        </button>
       </div>
 
-      {/* Slogan */}
-      <p className="text-[12px] text-[#6a6e73] mb-3 line-clamp-2 leading-relaxed">{agent.slogan}</p>
-
-      {/* Skills preview */}
-      <div className="flex flex-wrap gap-1 mb-3">
-        {agent.skills.slice(0, 3).map(skill => (
-          <span key={skill.id} className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6a6e73]">
-            {skill.icon} {skill.name}
-          </span>
-        ))}
-        {agent.skills.length > 3 && (
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#8e8e93]">
-            +{agent.skills.length - 3}
-          </span>
-        )}
+      {/* Description tinted box */}
+      <div className="w-full rounded-xl px-3 py-2.5 mb-3 flex-1 border-l-[3px] border-[#f4845f] bg-[#fff5f2]">
+        <p className="text-[12px] text-[#6a4a40] line-clamp-2 leading-relaxed">{agent.description}</p>
       </div>
 
-      {/* Stats + price */}
-      <div className="flex items-center justify-between pt-3 border-t border-[#f2f4f6]">
-        <div className="flex items-center gap-3">
-          <StarRating score={agent.rating.score} count={agent.rating.count} />
-          <span className="flex items-center gap-1 text-[12px] text-[#8e8e93]">
+      {/* Stats + 查看简历 row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="flex items-center gap-1 text-[11.5px]">
+            <Star className="w-3 h-3 fill-[#f5a623] text-[#f5a623]" />
+            <span className="font-semibold text-[#1d1d1f]">{agent.rating.score.toFixed(1)}</span>
+            <span className="text-[#9a9a9a]">({agent.rating.count})</span>
+          </span>
+          <span className="text-[#d9d9d9]">·</span>
+          <span className="flex items-center gap-1 text-[11.5px] text-[#9a9a9a]">
             <Users className="w-3 h-3" />
-            {agent.hiredCount.toLocaleString()}
+            <span>{agent.hiredCount.toLocaleString()}</span>
           </span>
+          <span className="text-[#d9d9d9]">·</span>
+          <span className="text-[11.5px] font-semibold text-[#1d1d1f]">{getLowestPrice(agent.pricing)}</span>
         </div>
-        <PriceBadge label={getLowestPrice(agent.pricing)} />
+        <div className="flex items-center gap-1 text-[12px] font-semibold text-[#1a1a1a] group-hover:gap-1.5 transition-all">
+          查看简历
+          <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+        </div>
       </div>
     </div>
   );
 }
 
+// ─── Category → Lucide Icon map ────────────────────────────────
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  web: Globe,
+  data: BarChart2,
+  creative: PenLine,
+  file: FileText,
+  integration: Link2,
+  memory: Brain,
+  code: Code2,
+  other: Box,
+};
+
 // ─── Skill Card ───────────────────────────────────────────────
-function SkillCard({ skill, onClick }: { skill: MarketSkill; onClick: () => void }) {
+function SkillCard({ skill, onClick, onMount, mounted }: { skill: MarketSkill; onClick: () => void; onMount: () => void; mounted: boolean }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl p-5 cursor-pointer transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 relative overflow-hidden"
-      style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}
+      className="bg-white rounded-2xl border border-[#ebebeb] p-5 cursor-pointer transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 relative overflow-hidden group"
     >
-      {skill.isFeatured && (
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#fff3cd] text-[#b45309]">
-          精选
-        </span>
-      )}
-      {skill.isNew && !skill.isFeatured && (
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#eff6ff] text-[#2563eb]">
-          新上架
-        </span>
-      )}
-
+      {/* Top row: name/category + mount button */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-11 h-11 rounded-xl bg-[#f5f5f7] flex items-center justify-center text-2xl flex-shrink-0">
-          {skill.icon}
-        </div>
-        <div className="min-w-0">
-          <div className="font-semibold text-[14px] text-[#1d1d1f] truncate">{skill.name}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <div className="font-semibold text-[14px] text-[#1d1d1f] truncate">{skill.name}</div>
+            {skill.isFeatured && (
+              <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1d1d1f] text-white">精选</span>
+            )}
+            {skill.isNew && !skill.isFeatured && (
+              <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6a6e73] border border-[#e5e5ea]">新上架</span>
+            )}
+          </div>
           <div className="text-[11px] text-[#8e8e93] mt-0.5">{CATEGORY_LABELS[skill.category]}</div>
         </div>
+        <button
+          onClick={e => { e.stopPropagation(); onMount(); }}
+          className={`flex-shrink-0 px-3.5 py-1.5 text-[12px] font-semibold rounded-xl transition-all ${
+            mounted ? 'bg-[#f5f5f7] text-[#8e8e93]' : 'bg-[#f4845f] text-white hover:bg-[#e8714d]'
+          }`}
+        >
+          {mounted ? '已挂载' : '挂载'}
+        </button>
       </div>
 
-      <p className="text-[12px] text-[#6a6e73] mb-3 line-clamp-2 leading-relaxed">{skill.shortDesc}</p>
+      <p className="text-[12.5px] text-[#6a6e73] mb-4 line-clamp-2 leading-relaxed">{skill.shortDesc}</p>
 
       <div className="flex items-center justify-between pt-3 border-t border-[#f2f4f6]">
         <div className="flex items-center gap-3">
           <StarRating score={skill.rating.score} count={skill.rating.count} />
           <span className="flex items-center gap-1 text-[12px] text-[#8e8e93]">
-            <Zap className="w-3 h-3" />
-            {skill.mountedCount.toLocaleString()}
+            <Zap className="w-3 h-3" /> {skill.mountedCount.toLocaleString()}
           </span>
+          <span className="text-[#d9d9d9]">·</span>
+          <span className="text-[11.5px] font-semibold text-[#1d1d1f]">{getLowestPrice(skill.pricing)}</span>
         </div>
-        <PriceBadge label={getLowestPrice(skill.pricing)} />
+        <div className="flex items-center gap-1 text-[12px] font-semibold text-[#1a1a1a] group-hover:gap-1.5 transition-all">
+          查看详情
+          <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+        </div>
       </div>
     </div>
   );
@@ -153,16 +255,16 @@ function SkillCard({ skill, onClick }: { skill: MarketSkill; onClick: () => void
 // ─── Agent Detail Modal ───────────────────────────────────────
 function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => void }) {
   const [hired, setHired] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const featured = agent.pricing.find(p => p.isFeatured) ?? agent.pricing[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
       <div
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-[50rem] max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-[#f2f4f6] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f5f5f7] transition-colors">
             <X className="w-4 h-4 text-[#6a6e73]" />
@@ -174,8 +276,12 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
         <div className="p-6 space-y-6">
           {/* Profile */}
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#f5f5f7] flex items-center justify-center text-4xl flex-shrink-0">
-              {agent.avatar}
+            <div className="w-16 h-16 rounded-full overflow-hidden ring-4 ring-[#f5f5f7] flex-shrink-0 bg-[#f5f5f7] flex items-center justify-center">
+              {agent.avatarUrl && !imgError ? (
+                <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+              ) : (
+                <span className="text-3xl">{agent.avatar}</span>
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap">
@@ -192,13 +298,60 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-2">关于TA</h3>
-            <p className="text-[13px] text-[#6a6e73] leading-relaxed">{agent.description}</p>
-          </div>
+          {/* Self-introduction */}
+          {agent.selfIntro && (
+            <div>
+              <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">自我介绍</h3>
+              <div className="rounded-2xl bg-[#fafafa] border border-[#f0f0f0] p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  {agent.avatarUrl && (
+                    <img src={agent.avatarUrl} alt={agent.name} className="w-6 h-6 rounded-full object-cover" />
+                  )}
+                  <span className="text-[12px] font-medium text-[#1d1d1f]">{agent.name}</span>
+                  <span className="text-[11px] text-[#8e8e93]">· {ROLE_LABELS[agent.role]}</span>
+                </div>
+                {agent.selfIntro.split('\n\n').map((para, i) => (
+                  <p key={i} className="text-[13px] text-[#3a3a3c] leading-[1.8]">{para}</p>
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* Skills tree */}
+          {/* User reviews */}
+          {agent.reviews && agent.reviews.length > 0 && (
+            <div>
+              <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">
+                用户评价
+                <span className="ml-1.5 text-[12px] font-normal text-[#8e8e93]">({agent.reviews.length})</span>
+              </h3>
+              <div className="space-y-3">
+                {agent.reviews.map((review, i) => (
+                  <div key={i} className="p-4 rounded-2xl bg-[#fafafa] border border-[#f0f0f0]">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2">
+                        {review.avatarUrl ? (
+                          <img src={review.avatarUrl} alt={review.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[#f5f5f7] flex items-center justify-center text-[12px] font-bold text-[#6a6e73] flex-shrink-0">{review.name[0]}</div>
+                        )}
+                        <div>
+                          <div className="text-[12px] font-medium text-[#1d1d1f] leading-none mb-0.5">{review.name}</div>
+                          <div className="text-[11px] text-[#8e8e93]">{review.date}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        {[1,2,3,4,5].map(n => (
+                          <Star key={n} className={`w-3 h-3 ${n <= review.rating ? 'fill-[#f5a623] text-[#f5a623]' : 'fill-none text-[#e5e5ea]'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-[#3a3a3c] leading-[1.7]">{review.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">携带技能 ({agent.skills.length})</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -214,27 +367,20 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
             </div>
           </div>
 
-          {/* Scenarios */}
           <div>
             <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">擅长场景</h3>
             <div className="flex flex-wrap gap-2">
               {agent.scenarios.map(s => (
-                <span key={s} className="text-[12px] px-3 py-1.5 rounded-xl bg-[#f5f5f7] text-[#6a6e73]">
-                  {s}
-                </span>
+                <span key={s} className="text-[12px] px-3 py-1.5 rounded-xl bg-[#f5f5f7] text-[#6a6e73]">{s}</span>
               ))}
             </div>
           </div>
 
-          {/* Pricing */}
           <div>
             <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">定价方案</h3>
             <div className="space-y-2">
               {agent.pricing.map(plan => (
-                <div
-                  key={plan.id}
-                  className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${plan.isFeatured ? 'border-[#1d1d1f] bg-[#f8f8f8]' : 'border-[#e5e5ea]'}`}
-                >
+                <div key={plan.id} className={`flex items-center justify-between p-3 rounded-xl border ${plan.isFeatured ? 'border-[#1d1d1f] bg-[#f8f8f8]' : 'border-[#e5e5ea]'}`}>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-medium text-[#1d1d1f]">{plan.label}</span>
@@ -250,14 +396,10 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
             </div>
           </div>
 
-          {/* CTA */}
           <div className="flex gap-3 pt-2">
             {!hired ? (
               <>
-                <button
-                  onClick={() => setHired(true)}
-                  className="flex-1 bg-[#1d1d1f] text-white py-3 rounded-xl text-[14px] font-semibold hover:bg-[#3a3a3c] transition-colors"
-                >
+                <button onClick={() => setHired(true)} className="flex-1 bg-[#1d1d1f] text-white py-3 rounded-xl text-[14px] font-semibold hover:bg-[#3a3a3c] transition-colors">
                   雇佣TA · {formatPrice(featured)}
                 </button>
                 <button className="px-4 py-3 rounded-xl border border-[#e5e5ea] text-[14px] text-[#6a6e73] hover:bg-[#f5f5f7] transition-colors">
@@ -284,10 +426,9 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
       <div
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-[50rem] max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-[#f2f4f6] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f5f5f7] transition-colors">
             <X className="w-4 h-4 text-[#6a6e73]" />
@@ -297,7 +438,6 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Header card */}
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl bg-[#f5f5f7] flex items-center justify-center text-4xl flex-shrink-0">
               {skill.icon}
@@ -317,13 +457,11 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
             </div>
           </div>
 
-          {/* Description */}
           <div>
             <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-2">能力说明</h3>
             <p className="text-[13px] text-[#6a6e73] leading-relaxed">{skill.description}</p>
           </div>
 
-          {/* Demo */}
           {skill.demos.length > 0 && (
             <div>
               <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">效果演示</h3>
@@ -347,7 +485,6 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
             </div>
           )}
 
-          {/* Compatibility */}
           <div>
             <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">兼容性</h3>
             <div className="flex flex-wrap gap-2">
@@ -359,15 +496,11 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
             </div>
           </div>
 
-          {/* Pricing */}
           <div>
             <h3 className="text-[13px] font-semibold text-[#1d1d1f] mb-3">定价方案</h3>
             <div className="space-y-2">
               {skill.pricing.map(plan => (
-                <div
-                  key={plan.id}
-                  className={`flex items-center justify-between p-3 rounded-xl border ${plan.isFeatured ? 'border-[#1d1d1f] bg-[#f8f8f8]' : 'border-[#e5e5ea]'}`}
-                >
+                <div key={plan.id} className={`flex items-center justify-between p-3 rounded-xl border ${plan.isFeatured ? 'border-[#1d1d1f] bg-[#f8f8f8]' : 'border-[#e5e5ea]'}`}>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-medium text-[#1d1d1f]">{plan.label}</span>
@@ -383,7 +516,6 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
             </div>
           </div>
 
-          {/* CTA */}
           <div className="pt-2">
             {!mounted ? (
               <button
@@ -413,6 +545,18 @@ export default function MarketView() {
   const [categoryFilter, setCategoryFilter] = useState<SkillCategory | 'all'>('all');
   const [selectedAgent, setSelectedAgent] = useState<MarketAgent | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<MarketSkill | null>(null);
+  const [showMyPanel, setShowMyPanel] = useState(false);
+  const [hiredAgentIds, setHiredAgentIds] = useState<Set<string>>(new Set());
+  const [mountedSkillIds, setMountedSkillIds] = useState<Set<string>>(new Set());
+
+  const hiredAgents = mockAgents.filter(a => hiredAgentIds.has(a.id));
+
+  function toggleHire(id: string) {
+    setHiredAgentIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  }
+  function toggleMount(id: string) {
+    setMountedSkillIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  }
 
   const agentRoles: Array<AgentRole | 'all'> = ['all', 'assistant', 'researcher', 'analyst', 'programmer', 'designer', 'customer_service'];
   const skillCategories: Array<SkillCategory | 'all'> = ['all', 'web', 'data', 'creative', 'file', 'integration', 'memory', 'code'];
@@ -437,111 +581,143 @@ export default function MarketView() {
     return list;
   }, [search, categoryFilter, sortMode]);
 
+  const totalCount = hiredAgentIds.size + mountedSkillIds.size;
+
   return (
-    <div className="w-full flex flex-col min-h-0">
-      {/* ── Page Header ── */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="w-5 h-5 text-[#1d1d1f]" />
-          <h1 className="text-[22px] font-bold text-[#1d1d1f]">锦囊集市</h1>
+    <div className="w-full flex flex-col min-h-0 -mt-6 relative">
+
+      {/* ── My Panel ── */}
+      <MyPanel open={showMyPanel} onClose={() => setShowMyPanel(false)} hiredAgents={hiredAgents} mountedSkillIds={mountedSkillIds} />
+
+      {/* ── My List button (top-right of hero) ── */}
+      <button
+        onClick={() => setShowMyPanel(true)}
+        className="absolute top-4 right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#e5e5ea] text-[12px] font-semibold text-[#555] hover:border-[#bbb] hover:text-[#1a1a1a] transition-all shadow-sm"
+      >
+        <LayoutList className="w-3.5 h-3.5" />
+        我的清单
+        {totalCount > 0 && (
+          <span className="ml-0.5 w-4 h-4 rounded-full bg-[#f4845f] text-white text-[10px] font-bold flex items-center justify-center">{totalCount}</span>
+        )}
+      </button>
+
+      {/* ── Hero Banner ── full-bleed, breaks out of CenterMain px-8 */}
+      <div
+        className="-mx-8 px-8 pt-14 pb-10 mb-8 text-center"
+        style={{ background: 'linear-gradient(170deg, #ffffff 0%, #f7f7f8 50%, #f2f4f6 100%)' }}
+      >
+        <div className="flex items-center justify-center mb-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fff5f2] border border-[#f4845f]/30 text-[#f4845f] text-[12px] font-semibold">
+            <Store className="w-3.5 h-3.5" />
+            锦囊集市
+          </span>
         </div>
-        <p className="text-[13px] text-[#8e8e93]">雇一个 Agent，或给你的 Agent 挂载新技能</p>
-      </div>
+        <h1 className="text-[34px] font-black text-[#1a1a1a] mb-2 tracking-tight leading-none">
+          {tab === 'agents' ? '雇一位 AI 助手' : '为 你的TBOX 装备技能'}
+        </h1>
+        <p className="text-[15px] text-[#999] mb-8">
+          {tab === 'agents' ? '发现各领域顶尖 AI Freelancer，立即雇佣' : '挑选skill模块，一键挂载，解锁更强的，更适合你的 Agent'}
+        </p>
 
-      {/* ── Tab Switch ── */}
-      <div className="flex items-center gap-1 mb-5 bg-[#f5f5f7] p-1 rounded-xl w-fit">
-        <button
-          onClick={() => setTab('agents')}
-          className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${tab === 'agents' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#6a6e73] hover:text-[#1d1d1f]'}`}
-        >
-          🧑‍💼 人才广场
-        </button>
-        <button
-          onClick={() => setTab('skills')}
-          className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${tab === 'skills' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#6a6e73] hover:text-[#1d1d1f]'}`}
-        >
-          ⚡ 装备铺
-        </button>
-      </div>
-
-      {/* ── Search + Sort ── */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-[360px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e93]" />
+        {/* Search bar */}
+        <div className="relative max-w-[600px] mx-auto">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#bbb]" />
           <input
             type="text"
-            placeholder={tab === 'agents' ? '搜索 Agent…' : '搜索技能…'}
+            placeholder={tab === 'agents' ? 'Find a freelancer...' : '搜索技能...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-[13px] bg-white rounded-xl border border-[#e5e5ea] outline-none focus:border-[#1d1d1f] transition-colors placeholder:text-[#c7c7cc]"
+            className="w-full pl-12 pr-5 py-4 text-[15px] bg-white rounded-2xl border border-[#e8e8e8] outline-none focus:border-[#ccc] transition-colors placeholder:text-[#c8c8c8] shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
           />
         </div>
 
+        {/* Tab switcher — underline style, no pill to avoid button clutter */}
+        <div className="flex items-center justify-center gap-8 mt-7 border-b border-[#e8e8e8] pb-0 max-w-[600px] mx-auto">
+          <button
+            onClick={() => { setTab('agents'); setSearch(''); }}
+            className={`flex items-center gap-1.5 pb-3 text-[14px] font-semibold transition-all border-b-2 -mb-px ${tab === 'agents' ? 'border-[#f4845f] text-[#1a1a1a]' : 'border-transparent text-[#999] hover:text-[#555]'}`}
+          >
+            <Users className="w-3.5 h-3.5" /> 人才广场
+          </button>
+          <button
+            onClick={() => { setTab('skills'); setSearch(''); }}
+            className={`flex items-center gap-1.5 pb-3 text-[14px] font-semibold transition-all border-b-2 -mb-px ${tab === 'skills' ? 'border-[#f4845f] text-[#1a1a1a]' : 'border-transparent text-[#999] hover:text-[#555]'}`}
+          >
+            <Package className="w-3.5 h-3.5" /> 装备铺
+          </button>
+        </div>
+      </div>
+
+      {/* ── Filter + Sort Bar ── */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <div className="flex gap-2 flex-1 overflow-x-auto pb-0.5 flex-nowrap">
+          {tab === 'agents'
+            ? agentRoles.map(role => (
+                <button
+                  key={role}
+                  onClick={() => setRoleFilter(role)}
+                  className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium whitespace-nowrap transition-all flex-shrink-0 border ${
+                    roleFilter === role
+                      ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                      : 'bg-white text-[#555] border-[#e0e0e0] hover:border-[#bbb]'
+                  }`}
+                >
+                  {role === 'all' ? '全部' : ROLE_LABELS[role]}
+                </button>
+              ))
+            : skillCategories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium whitespace-nowrap transition-all flex-shrink-0 border ${
+                    categoryFilter === cat
+                      ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                      : 'bg-white text-[#555] border-[#e0e0e0] hover:border-[#bbb]'
+                  }`}
+                >
+                  {cat === 'all' ? '全部' : CATEGORY_LABELS[cat]}
+                </button>
+              ))
+          }
+        </div>
+
         {/* Sort */}
-        <div className="flex items-center gap-1 bg-[#f5f5f7] p-1 rounded-xl">
-          {([['hot', '🔥 热门'], ['new', '✨ 最新'], ['rating', '⭐ 好评']] as const).map(([key, label]) => (
+        <div className="flex items-center gap-1 bg-white border border-[#e0e0e0] p-1 rounded-full flex-shrink-0">
+          {([['hot', TrendingUp, '热门'], ['new', Clock, '最新'], ['rating', Star, '好评']] as [SortMode, React.ElementType, string][]).map(([key, Icon, label]) => (
             <button
               key={key}
               onClick={() => setSortMode(key)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${sortMode === key ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#6a6e73]'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${sortMode === key ? 'bg-[#1a1a1a] text-white' : 'text-[#777] hover:text-[#1a1a1a]'}`}
             >
-              {label}
+              <Icon className="w-3 h-3" />{label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── Category Filter ── */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
-        {tab === 'agents'
-          ? agentRoles.map(role => (
-              <button
-                key={role}
-                onClick={() => setRoleFilter(role)}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${roleFilter === role ? 'bg-[#1d1d1f] text-white' : 'bg-white text-[#6a6e73] hover:bg-[#f5f5f7]'}`}
-                style={{ boxShadow: roleFilter === role ? undefined : '0 1px 4px rgba(0,0,0,0.06)' }}
-              >
-                {role === 'all' ? '全部' : ROLE_LABELS[role]}
-              </button>
-            ))
-          : skillCategories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${categoryFilter === cat ? 'bg-[#1d1d1f] text-white' : 'bg-white text-[#6a6e73] hover:bg-[#f5f5f7]'}`}
-                style={{ boxShadow: categoryFilter === cat ? undefined : '0 1px 4px rgba(0,0,0,0.06)' }}
-              >
-                {cat === 'all' ? '全部' : CATEGORY_LABELS[cat]}
-              </button>
-            ))
-        }
-      </div>
-
-      {/* ── Results count ── */}
-      <div className="text-[12px] text-[#8e8e93] mb-4">
-        {tab === 'agents'
-          ? `共 ${filteredAgents.length} 位 Agent`
-          : `共 ${filteredSkills.length} 项技能`}
+      {/* Result count */}
+      <div className="text-[12px] text-[#bbb] mb-5">
+        {tab === 'agents' ? `${filteredAgents.length} 位 Agent` : `${filteredSkills.length} 项技能`}
       </div>
 
       {/* ── Card Grid ── */}
       {tab === 'agents' ? (
         filteredAgents.length === 0 ? (
-          <div className="text-center py-16 text-[#8e8e93] text-[13px]">没有找到匹配的 Agent</div>
+          <div className="text-center py-20 text-[#bbb] text-[14px]">没有找到匹配的 Agent</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
+          <div className="grid grid-cols-3 gap-5 pb-12">
             {filteredAgents.map(agent => (
-              <AgentCard key={agent.id} agent={agent} onClick={() => setSelectedAgent(agent)} />
+              <AgentCard key={agent.id} agent={agent} onClick={() => setSelectedAgent(agent)} onHire={() => toggleHire(agent.id)} hired={hiredAgentIds.has(agent.id)} />
             ))}
           </div>
         )
       ) : (
         filteredSkills.length === 0 ? (
-          <div className="text-center py-16 text-[#8e8e93] text-[13px]">没有找到匹配的技能</div>
+          <div className="text-center py-20 text-[#bbb] text-[14px]">没有找到匹配的技能</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
+          <div className="grid grid-cols-3 gap-5 pb-12">
             {filteredSkills.map(skill => (
-              <SkillCard key={skill.id} skill={skill} onClick={() => setSelectedSkill(skill)} />
+              <SkillCard key={skill.id} skill={skill} onClick={() => setSelectedSkill(skill)} onMount={() => toggleMount(skill.id)} mounted={mountedSkillIds.has(skill.id)} />
             ))}
           </div>
         )

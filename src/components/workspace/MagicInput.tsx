@@ -159,9 +159,10 @@ const MODES = [
 ];
 
 const MODELS = [
-  { key: 'tbox',   name: 'Tbox',   avatar: '/mascot.png' },
-  { key: 'gpt-4',  name: 'GPT-4',  avatar: '/mascot.png' },
-  { key: 'claude', name: 'Claude', avatar: '/mascot.png' },
+  { key: 'tbox',       name: 'Tbox',        avatar: '/mascot.png' },
+  { key: 'ling-2.5',   name: 'Ling-2.5-1T', avatar: '/ling.png' },
+  { key: 'gpt-4',      name: 'GPT-4',       avatar: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/200px-ChatGPT_logo.svg.png' },
+  { key: 'claude',     name: 'Claude',      avatar: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Claude_AI_logo.svg/200px-Claude_AI_logo.svg.png' },
 ];
 
 const SKILLS: SkillItem[] = [
@@ -616,7 +617,7 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
           <div className="relative inline-block">
             <button
               onClick={() => setIsModelOpen(v => !v)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[rgba(0,0,0,0.09)] bg-white/80 text-sm cursor-pointer hover:border-[rgba(0,0,0,0.18)] transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 text-sm cursor-pointer transition-colors"
             >
               <img src={selectedModel.avatar} alt={selectedModel.name} className="w-5 h-5 rounded-full object-cover" />
               <span className="text-[13px] font-medium text-[#333]">{selectedModel.name}</span>
