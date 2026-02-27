@@ -9,7 +9,7 @@ import RightSidebar from '@/components/workspace/RightSidebar';
 export default function Home() {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarVisible, setIsRightSidebarVisible] = useState(true);
-  const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'>('home');
+  const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'>('home');
 
   // Chat state lifted here so Header & RightSidebar can be hidden
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f6]">
-      {!isChatOpen && activeView !== 'knowledge' && (
+      {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && (
         <Header 
           onToggleRightSidebar={() => setIsRightSidebarVisible(!isRightSidebarVisible)}
           isRightSidebarVisible={isRightSidebarVisible}
@@ -35,11 +35,11 @@ export default function Home() {
         />
       )}
       
-      <div className={`flex flex-1 ${isChatOpen || activeView === 'knowledge' ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
+      <div className={`flex flex-1 ${isChatOpen || activeView === 'knowledge' || activeView === 'market' ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
         <LeftSidebar 
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
-          onOpenView={(v) => setActiveView(v)}
+          onOpenView={(v) => setActiveView(v as 'home'|'knowledge'|'scheduled'|'market')}
         />
 
         <CenterMain
@@ -52,7 +52,7 @@ export default function Home() {
           onCloseChat={handleCloseChat}
         />
         
-        {!isChatOpen && activeView !== 'knowledge' && <RightSidebar isVisible={isRightSidebarVisible} />}
+        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && <RightSidebar isVisible={isRightSidebarVisible} />}
       </div>
     </div>
   );

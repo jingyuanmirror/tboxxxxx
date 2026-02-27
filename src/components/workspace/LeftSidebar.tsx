@@ -11,7 +11,7 @@ interface ChatHistoryItem {
 interface LeftSidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  onOpenView?: (view: 'home'|'knowledge'|'scheduled') => void;
+  onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market') => void;
   chatHistory?: ChatHistoryItem[];
   onOpenChat?: (message: string) => void;
 }
@@ -96,11 +96,15 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
         {/* 锦囊集市 */}
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
-            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">劳务集市</div>
-            <div className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black" title="查看智能体市场">→</div>
+            <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">锦囊集市</div>
+            <div
+              onClick={() => onOpenView && onOpenView('market')}
+              className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black"
+              title="查看锦囊集市"
+            >→</div>
           </div>
-          <div className="nav-item">数据分析智能体</div>
-          <div className="nav-item">文案写作智能体</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('market')}>🧑‍💼 人才广场</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('market')}>⚡ 装备铺</div>
         </div>
 
         {/* 定时任务 */}

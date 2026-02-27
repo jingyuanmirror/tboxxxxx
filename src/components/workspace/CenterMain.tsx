@@ -8,6 +8,7 @@ import { Check, ChevronDown, MessageSquare, Send, X } from 'lucide-react';
 
 const ScheduledTasksClient = dynamic(() => import('./ScheduledTasks'), { ssr: false });
 const KnowledgeView = dynamic(() => import('./KnowledgeView'), { ssr: false });
+const MarketView = dynamic(() => import('./MarketView'), { ssr: false });
 
 type ConfirmItemStatus = 'pending' | 'confirmed' | 'replied';
 
@@ -25,7 +26,7 @@ const initialItems: ConfirmItem[] = [
 
 interface CenterMainProps {
   isLeftSidebarCollapsed: boolean;
-  activeView?: 'home' | 'knowledge' | 'scheduled';
+  activeView?: 'home' | 'knowledge' | 'scheduled' | 'market';
   onCloseScheduledTasks?: () => void;
   isChatOpen?: boolean;
   chatInitialMessage?: string;
@@ -91,7 +92,7 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
   }
 
   return (
-    <div className={`flex-1 flex flex-col items-center pt-6 pb-5 relative overflow-y-auto overflow-x-hidden bg-[#f2f4f6] z-[1] ${activeView === 'knowledge' ? 'px-8' : 'px-[60px] pl-10'}`}>
+    <div className={`flex-1 flex flex-col items-center pt-6 pb-5 relative overflow-y-auto overflow-x-hidden bg-[#f2f4f6] z-[1] ${activeView === 'knowledge' || activeView === 'market' ? 'px-8' : 'px-[60px] pl-10'}`}>
       {/* Background Image */}
       <div 
         className={`fixed top-0 right-0 bottom-0 opacity-50 pointer-events-none -z-[1] transition-all duration-300 ${
@@ -114,9 +115,16 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
         </div>
       )}
 
+      {/* Market view: full width */}
+      {activeView === 'market' && (
+        <div className="w-full relative z-[2]">
+          <MarketView />
+        </div>
+      )}
+
       {/* Main content area: render based on activeView */}
       <div className="w-full max-w-[950px] flex flex-col items-start relative z-[2]">
-        {activeView === 'knowledge' ? null : activeView === 'scheduled' ? (
+        {activeView === 'knowledge' || activeView === 'market' ? null : activeView === 'scheduled' ? (
           <div className="w-full">
             <React.Suspense fallback={<div className="py-10 text-center text-gray-500">加载中…</div>}>
               <ScheduledTasksClient />
