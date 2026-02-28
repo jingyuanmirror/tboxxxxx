@@ -14,9 +14,11 @@ interface LeftSidebarProps {
   onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market', tab?: 'agents'|'skills'|'tasks') => void;
   chatHistory?: ChatHistoryItem[];
   onOpenChat?: (message: string) => void;
+  appMode?: 'normal' | 'beginner';
+  onToggleMode?: () => void;
 }
 
-export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView, chatHistory = [], onOpenChat }: LeftSidebarProps) {
+export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView, chatHistory = [], onOpenChat, appMode = 'normal', onToggleMode }: LeftSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
@@ -161,6 +163,44 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
 
       {/* User Settings Area */}
       <div className={`flex-shrink-0 border-t border-[rgba(0,0,0,0.06)] pt-2.5 relative z-10 ${isCollapsed ? 'px-2.5' : 'px-2.5'}`}>
+        {/* Mode Toggle Button */}
+        <button
+          onClick={onToggleMode}
+          title={appMode === 'normal' ? '切换到新手模式' : '切换到专家模式'}
+          className={`w-full mb-1 px-[15px] py-2 cursor-pointer text-[13px] rounded-lg transition-all flex items-center gap-2.5 font-medium
+            ${appMode === 'beginner'
+              ? 'bg-[rgba(59,130,246,0.1)] text-[#2563eb] hover:bg-[rgba(59,130,246,0.18)]'
+              : 'text-[#6a6e73] hover:bg-[rgba(0,0,0,0.04)] hover:text-[#1d1d1f]'
+            }
+            ${isCollapsed ? 'justify-center px-2.5' : ''}
+          `}
+        >
+          {appMode === 'beginner' ? (
+            // Sparkle / beginner icon
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+            </svg>
+          ) : (
+            // Layers icon for normal mode
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
+            </svg>
+          )}
+          {!isCollapsed && (
+            <span className="truncate">
+              {appMode === 'beginner' ? '新手模式' : '专家模式'}
+            </span>
+          )}
+          {!isCollapsed && (
+            <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0
+              ${appMode === 'beginner' ? 'bg-[rgba(59,130,246,0.15)] text-[#2563eb]' : 'bg-[rgba(0,0,0,0.06)] text-[#8e8e93]'}
+            `}>
+              {appMode === 'beginner' ? 'ON' : 'OFF'}
+            </span>
+          )}
+        </button>
         <button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
           className={`px-[15px] py-2 cursor-pointer text-[13px] rounded-lg transition-all text-[#6a6e73] flex items-center gap-2.5 font-medium hover:bg-[rgba(0,0,0,0.04)] hover:text-[#1d1d1f] ${isCollapsed ? 'justify-center w-fit px-2.5 h-8' : ''}`}

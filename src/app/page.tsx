@@ -11,6 +11,7 @@ export default function Home() {
   const [isRightSidebarVisible, setIsRightSidebarVisible] = useState(true);
   const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'>('home');
   const [marketInitialTab, setMarketInitialTab] = useState<'agents'|'skills'|'tasks'|undefined>(undefined);
+  const [appMode, setAppMode] = useState<'normal' | 'beginner'>('normal');
 
   // Chat state lifted here so Header & RightSidebar can be hidden
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -40,6 +41,8 @@ export default function Home() {
         <LeftSidebar 
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
+          appMode={appMode}
+          onToggleMode={() => setAppMode(m => m === 'normal' ? 'beginner' : 'normal')}
           onOpenView={(v, tab) => {
             // ensure initial tab is set before switching view so MarketView mounts with correct tab
             if (v === 'market' && tab) setMarketInitialTab(tab);
@@ -52,18 +55,24 @@ export default function Home() {
           isLeftSidebarCollapsed={isLeftSidebarCollapsed}
           activeView={activeView}
           marketInitialTab={marketInitialTab}
+          appMode={appMode}
           onCloseScheduledTasks={() => setActiveView('home')}
           isChatOpen={isChatOpen}
           chatInitialMessage={chatInitialMessage}
           onOpenChat={handleOpenChat}
           onCloseChat={handleCloseChat}
+          onNavigateTo={(v, tab) => {
+            if (v === 'market' && tab) setMarketInitialTab(tab as 'agents' | 'skills' | 'tasks');
+            else setMarketInitialTab(undefined);
+            setActiveView(v);
+          }}
           onOpenMarket={(tab) => {
             setMarketInitialTab(tab);
             setActiveView('market');
           }}
         />
         
-        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && <RightSidebar isVisible={isRightSidebarVisible} />}
+        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && appMode !== 'beginner' && <RightSidebar isVisible={isRightSidebarVisible} />}
       </div>
     </div>
   );

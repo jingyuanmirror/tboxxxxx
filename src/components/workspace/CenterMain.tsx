@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import MagicInput from './MagicInput';
 import ChatDialog from './ChatDialog';
+import BeginnerHome from './BeginnerHome';
 import { Check, ChevronDown, MessageSquare, Send, X } from 'lucide-react';
 
 const ScheduledTasksClient = dynamic(() => import('./ScheduledTasks'), { ssr: false });
@@ -34,9 +35,11 @@ interface CenterMainProps {
   onOpenChat?: (message: string) => void;
   onCloseChat?: () => void;
   onOpenMarket?: (tab: 'agents' | 'skills') => void;
+  onNavigateTo?: (view: 'home' | 'knowledge' | 'scheduled' | 'market', tab?: 'agents' | 'skills' | 'tasks') => void;
+  appMode?: 'normal' | 'beginner';
 }
 
-export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat, onOpenMarket }: CenterMainProps) {
+export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat, onOpenMarket, onNavigateTo, appMode = 'normal' }: CenterMainProps) {
   const [items, setItems] = useState<ConfirmItem[]>(initialItems);
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
@@ -132,6 +135,11 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
               <ScheduledTasksClient />
             </React.Suspense>
           </div>
+        ) : appMode === 'beginner' ? (
+          <BeginnerHome
+            onOpenChat={onOpenChat ?? (() => {})}
+            onOpenView={onNavigateTo}
+          />
         ) : (
           <>
             {/* Home greeting */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, type ReactElement } from 'react';
 import { useModelStore } from '../../lib/modelStore';
 import { mockAgents, mockSkills, ROLE_LABELS, CATEGORY_LABELS } from '@/lib/marketMock';
 
@@ -16,7 +16,7 @@ interface UploadedFile {
 interface RepoFile { path: string; name: string }
 interface SkillItem { key: string; name: string; color: string }
 interface RecentSkill { key: string; name: string }
-interface SubTool { key: string; name: string; promptPrefix: string; fileHint?: string; fileRequired?: boolean; icon?: () => JSX.Element }
+interface SubTool { key: string; name: string; promptPrefix: string; fileHint?: string; fileRequired?: boolean; icon?: () => ReactElement }
 
 /* ─── static config ─── */
 const FILE_TYPE_ICONS: Record<string, { label: string; color: string }> = {
@@ -208,9 +208,10 @@ function AgentPickerItem({ agent, onSelect }: { agent: import('@/lib/marketMock'
 interface MagicInputProps {
   onSendMessage?: (message: string, model?: string) => void;
   onOpenMarket?: (tab: 'agents' | 'skills') => void;
+  compact?: boolean;
 }
 
-export default function MagicInput({ onSendMessage, onOpenMarket }: MagicInputProps) {
+export default function MagicInput({ onSendMessage, onOpenMarket, compact = false }: MagicInputProps) {
   const [inputValue, setInputValue]       = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -424,10 +425,14 @@ export default function MagicInput({ onSendMessage, onOpenMarket }: MagicInputPr
 
   return (
     <div
-      className="bg-[rgba(255,255,255,0.75)] backdrop-blur-[16px] border border-[rgba(255,255,255,0.6)] w-full max-w-[950px] min-h-[170px] rounded-[24px] p-[15px_25px_20px_25px] box-border flex flex-col justify-between relative transition-all duration-300 ease-in-out flex-shrink-0 mb-[30px] hover:-translate-y-[3px] z-[2]"
+      className={`bg-[rgba(255,255,255,0.75)] backdrop-blur-[16px] border border-[rgba(255,255,255,0.6)] w-full max-w-[950px] rounded-[24px] box-border flex flex-col justify-between relative transition-all duration-300 ease-in-out flex-shrink-0 z-[2] ${
+        compact
+          ? 'min-h-0 p-[12px_20px_14px_20px] mb-0'
+          : 'min-h-[170px] p-[15px_25px_20px_25px] mb-[30px] hover:-translate-y-[3px]'
+      }`}
       style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)' }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.4)'; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)'; }}
+      onMouseEnter={e => { if (!compact) e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.4)'; }}
+      onMouseLeave={e => { if (!compact) e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)'; }}
     >
       {/* Uploaded Files Preview */}
       {uploadedFiles.length > 0 && (
@@ -466,7 +471,7 @@ export default function MagicInput({ onSendMessage, onOpenMarket }: MagicInputPr
       )}
 
       {/* Textarea with inline token highlighting via overlay */}
-      <div className="relative w-full flex-1 min-h-[60px] mb-1.5">
+      <div className={`relative w-full flex-1 mb-1.5 ${compact ? 'min-h-[28px]' : 'min-h-[60px]'}`}>
         {/* Mirror layer: same font metrics, renders {tokens} highlighted */}
         <div
           aria-hidden="true"
