@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+export const runtime = 'edge';
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +21,6 @@ export async function POST(req: Request) {
             parsedMetadata = { tool_mode, sub_tool };
             // strip prefix from content
             m.content = m.content.replace(metaRe, '');
-            // only parse first found metadata (stop after first)
             break;
           }
         }
@@ -33,35 +32,60 @@ export async function POST(req: Request) {
     const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 
     if (!OPENAI_API_KEY) {
-      return NextResponse.json({ error: 'Server misconfigured: missing OPENAI_API_KEY' }, { status: 500 });
+      return new Response(JSON.stringify({ error: 'Server misconfigured: missing OPENAI_API_KEY' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    // Forward conversation to OpenAI-compatible Chat Completions API (supports ZenMux)
-    // If metadata was parsed, inject it as a system message so the model gets structured context
+    // Build messages for the upstream API
     const forwardMessages = Array.isArray(messages) ? [...messages] : [];
     if (parsedMetadata) {
       forwardMessages.unshift({ role: 'system', content: `METADATA: ${JSON.stringify(parsedMetadata)}` });
     }
 
-    const resp = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+    const upstreamResp = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({ model: OPENAI_MODEL, messages: forwardMessages, max_tokens: 800 }),
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: forwardMessages,
+        max_tokens: 2048,
+        stream: true,
+      }),
     });
 
-    if (!resp.ok) {
-      const text = await resp.text();
-      return NextResponse.json({ error: text }, { status: resp.status });
+    if (!upstreamResp.ok) {
+      const text = await upstreamResp.text();
+      return new Response(JSON.stringify({ error: text }), {
+        status: upstreamResp.status,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const data = await resp.json();
-    const reply = data?.choices?.[0]?.message?.content ?? '';
-    // return parsed metadata to caller for optional client-side handling
-    return NextResponse.json({ reply, metadata: parsedMetadata });
+    // Pipe the SSE stream from upstream directly to the client
+    const upstreamBody = upstreamResp.body;
+    if (!upstreamBody) {
+      return new Response(JSON.stringify({ error: 'Empty upstream response' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(upstreamBody, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+      },
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message ?? String(err) }, { status: 500 });
+    return new Response(JSON.stringify({ error: err?.message ?? String(err) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

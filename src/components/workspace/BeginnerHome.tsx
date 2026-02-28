@@ -71,6 +71,10 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
   }, [stage]);
 
   const handleScenarioSelect = (scenario: TaskScenario) => {
+    if (scenario.id === 'chat') {
+      handleSend('我想随便聊聊先');
+      return;
+    }
     setSelectedScenario(prev => prev?.id === scenario.id ? null : scenario);
   };
 

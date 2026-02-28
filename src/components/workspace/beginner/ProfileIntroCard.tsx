@@ -61,16 +61,16 @@ export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip,
 
       <div className="flex flex-col gap-4">
         {/* Name */}
-        <div>
-          <label className="text-[13.5px] font-semibold text-[#1d1d1f] mb-1.5 block">
-            {defaultName}，你希望我怎么称呼你？
+        <div className="flex items-center gap-3">
+          <label className="flex-shrink-0 text-[13.5px] font-semibold text-[#1d1d1f] whitespace-nowrap">
+            你想我怎么称呼你？
           </label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder={`就叫 ${defaultName} 吧，或者告诉我你的昵称`}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-[rgba(0,0,0,0.1)] bg-white text-[13.5px] text-[#1d1d1f] placeholder:text-[#c7c7cc] outline-none transition-all focus:border-[#2563eb] focus:ring-2 focus:ring-[rgba(37,99,235,0.12)]"
+            placeholder="你也可以帮我重新起个名字"
+            className="flex-1 px-3.5 py-2 rounded-xl border border-[rgba(0,0,0,0.1)] bg-white text-[13.5px] text-[#1d1d1f] placeholder:text-[#c7c7cc] outline-none transition-all focus:border-[#2563eb] focus:ring-2 focus:ring-[rgba(37,99,235,0.12)]"
           />
         </div>
 

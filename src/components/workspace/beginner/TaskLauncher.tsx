@@ -139,6 +139,13 @@ export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], i
       ]
     : TASK_SCENARIOS;
 
+  // When introCard is present we have 6 slots total (introCard + 5 scenarios).
+  // Always keep 'chat' (随便聊聊) as the last scenario card.
+  const chatScenario = TASK_SCENARIOS.find(s => s.id === 'chat')!;
+  const displayScenarios = introCard
+    ? [...ordered.filter(s => s.id !== 'chat').slice(0, 4), chatScenario]
+    : ordered;
+
   return (
     <div className="w-full mb-4">
       <div className="text-[12px] font-semibold text-[#8e8e93] uppercase tracking-[0.6px] mb-3">
@@ -166,7 +173,7 @@ export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], i
           </button>
         )}
 
-        {ordered.slice(0, introCard ? 5 : ordered.length).map((scenario, idx) => {
+        {displayScenarios.map((scenario, idx) => {
           const isSelected = selectedId === scenario.id;
           const isDimmed = selectedId !== null && !isSelected;
           const isPriority = priorityIds.includes(scenario.id);
