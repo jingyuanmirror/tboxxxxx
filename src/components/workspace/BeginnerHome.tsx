@@ -1,15 +1,52 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useOnboarding } from '@/lib/useOnboarding';
 import ProfileIntroCard from './beginner/ProfileIntroCard';
 import TaskLauncher, { getPreferredScenarioIds, getPreferredChips, type TaskScenario } from './beginner/TaskLauncher';
 import SmartInputHints from './beginner/SmartInputHints';
+import RecommendedTasks from './beginner/RecommendedTasks';
+import DiscoveryTasks from './beginner/DiscoveryTasks';
 import MagicInput from './MagicInput';
-import UnlockBanner from './beginner/UnlockBanner';
 import type { UserProfile } from '@/lib/useOnboarding';
 
-function buildGreeting(stage: string, profile: UserProfile | null, introSkipped: boolean): { title: string; subtitle: string } {
+function buildGreeting(
+  stage: string,
+  profile: UserProfile | null,
+  introSkipped: boolean,
+  completedTaskTypes?: string[],
+): { title: string; subtitle: string } {
+  // ── After completing 3 tasks (growing stage) ──
+  if (stage === 'growing') {
+    const name = profile?.name;
+    return {
+      title: name ? `${name}，你已经是 Tbox 高手了 🌟` : '你已经是 Tbox 高手了 🌟',
+      subtitle: '三件事全部搞定，越来越厉害了！想做什么就直接在下方输入框告诉我 ↓',
+    };
+  }
+
+  // ── After first/second task completion (first_task_done stage) ──
+  if (stage === 'first_task_done') {
+    const count = completedTaskTypes?.length ?? 1;
+    const lastTask = completedTaskTypes?.[completedTaskTypes.length - 1];
+    const NEXT_LABEL: Record<string, string> = {
+      research: '整个 PPT',
+      search: '做份分析报告',
+      ppt: '写封推进邮件',
+      email: '搞个推广方案',
+      plan: '整个 PPT',
+      chat: '写份正式报告',
+    };
+    const nextLabel = lastTask ? (NEXT_LABEL[lastTask] ?? '别的任务') : '别的任务';
+    const encourage = count >= 2
+      ? '你已经连续完成两件事了，厉害！现在来探索一些你可能还没发现的功能 👇'
+      : `太棒了，第一次就这么顺手 🎉 接下来再试试${nextLabel}？`;
+    return {
+      title: profile?.name ? `${profile.name}，干得漂亮！` : '干得漂亮！',
+      subtitle: encourage,
+    };
+  }
+
   if (profile?.name && profile?.occupation) {
     const occupationMap: Record<string, string> = {
       '产品经理': '作为一位产品经理，PRD、竞品分析、需求梳理，我都能帮你搞定。',
@@ -52,14 +89,13 @@ interface BeginnerHomeProps {
 
 export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomeProps) {
   const {
-    stage, profile, introSkipped,
-    saveProfile, skipIntro, markTaskStarted, markTaskDone,
+    stage, profile, introSkipped, completedTaskTypes, visitedDiscovery,
+    saveProfile, skipIntro, markTaskStarted, markTaskDone, markDiscoveryVisited,
   } = useOnboarding();
 
   const { selectedModel: _unusedModelRef } = { selectedModel: null } as never;
 
   const [selectedScenario, setSelectedScenario] = useState<TaskScenario | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
   const [liveUseCases, setLiveUseCases] = useState<string[]>([]);
   const [liveOccupation, setLiveOccupation] = useState('');
   const [introExpanded, setIntroExpanded] = useState(false);
@@ -83,13 +119,6 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
     '学生':    ['搜信息', '做报告', '写方案'],
   };
 
-  // Show unlock banner when first_task_done triggers
-  useEffect(() => {
-    if (stage === 'first_task_done' || stage === 'growing') {
-      setShowBanner(true);
-    }
-  }, [stage]);
-
   const handleScenarioSelect = (scenario: TaskScenario) => {
     if (scenario.id === 'chat') {
       handleSend('我想随便聊聊先');
@@ -106,7 +135,7 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
   };
 
   const showIntroCard = stage === 'new_user' && !introSkipped;
-  const greeting = buildGreeting(stage, profile, introSkipped);
+  const greeting = buildGreeting(stage, profile, introSkipped, completedTaskTypes);
 
   return (
     <div className="w-full max-w-[950px] mx-auto flex flex-col pb-10">
@@ -147,12 +176,35 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
         </div>
       )}
 
-      {/* Task Launcher — hidden while intro card is open */}
-      {!introExpanded && (
+      {/* Task Launcher — hidden while intro card is open or after 3 tasks (growing) */}
+      {/* After first task: show targeted recommendation list */}
+      {!introExpanded && stage === 'first_task_done' && completedTaskTypes.length < 2 && (
+        <RecommendedTasks
+          lastCompletedTask={completedTaskTypes[completedTaskTypes.length - 1]}
+          onSelect={(prompt) => {
+            markTaskStarted();
+            onOpenChat(prompt);
+            setTimeout(() => markTaskDone('recommendation'), 1000);
+          }}
+        />
+      )}
+
+      {/* After second task: show 3-card discovery grid (scheduled / knowledge / market) */}
+      {!introExpanded && stage === 'first_task_done' && completedTaskTypes.length >= 2 && onOpenView && visitedDiscovery.length < 3 && (
+        <DiscoveryTasks
+          onOpenView={onOpenView}
+          visitedIds={visitedDiscovery}
+          onVisit={markDiscoveryVisited}
+        />
+      )}
+
+      {/* Full grid: only for new/introduced/started stages */}
+      {!introExpanded && stage !== 'growing' && stage !== 'first_task_done' && (
         <TaskLauncher
           selectedId={selectedScenario?.id ?? null}
           onSelect={handleScenarioSelect}
           priorityIds={getPreferredScenarioIds(profile?.useCases ?? liveUseCases)}
+          showIntroHeader={stage === 'new_user' || stage === 'introduced' || stage === 'first_task_started'}
           introCard={showIntroCard ? { expanded: introExpanded, onToggle: () => setIntroExpanded(e => !e) } : undefined}
         />
       )}
@@ -179,16 +231,6 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
         </p>
       </div>
 
-      {/* Unlock Banner */}
-      {showBanner && (
-        <UnlockBanner
-          onDismiss={() => setShowBanner(false)}
-          onOpenScheduled={() => { setShowBanner(false); onOpenView?.('scheduled'); }}
-          onOpenKnowledge={() => { setShowBanner(false); onOpenView?.('knowledge'); }}
-          onOpenMarket={() => { setShowBanner(false); onOpenView?.('market'); }}
-          onTryAnother={() => { setShowBanner(false); setSelectedScenario(null); }}
-        />
-      )}
     </div>
   );
 }

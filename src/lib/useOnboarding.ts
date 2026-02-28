@@ -20,6 +20,7 @@ export interface OnboardingState {
   stage: OnboardingStage;
   profile: UserProfile | null;
   completedTaskTypes: string[];
+  visitedDiscovery: string[];
   firstSeenAt: string;
   graduatedAt?: string;
   introSkipped?: boolean;
@@ -39,6 +40,7 @@ function defaultState(): OnboardingState {
     stage: 'new_user',
     profile: null,
     completedTaskTypes: [],
+    visitedDiscovery: [],
     firstSeenAt: new Date().toISOString(),
   };
 }
@@ -62,8 +64,6 @@ function saveState(s: OnboardingState) {
 
 export function useOnboarding() {
   const [state, setState] = useState<OnboardingState>(defaultState);
-
-  // Always start fresh on page load (state is not restored from localStorage)
 
   const update = useCallback((partial: Partial<OnboardingState>) => {
     setState(prev => {
@@ -105,6 +105,15 @@ export function useOnboarding() {
     });
   }, []);
 
+  const markDiscoveryVisited = useCallback((id: string) => {
+    setState(prev => {
+      if ((prev.visitedDiscovery ?? []).includes(id)) return prev;
+      const next = { ...prev, visitedDiscovery: [...(prev.visitedDiscovery ?? []), id] };
+      saveState(next);
+      return next;
+    });
+  }, []);
+
   const graduate = useCallback(() => {
     update({ stage: 'growing', graduatedAt: new Date().toISOString() });
   }, [update]);
@@ -121,11 +130,13 @@ export function useOnboarding() {
     stage: state.stage,
     profile: state.profile,
     completedTaskTypes: state.completedTaskTypes,
+    visitedDiscovery: state.visitedDiscovery ?? [],
     introSkipped: state.introSkipped ?? false,
     saveProfile,
     skipIntro,
     markTaskStarted,
     markTaskDone,
+    markDiscoveryVisited,
     graduate,
     isFeatureUnlocked,
   };

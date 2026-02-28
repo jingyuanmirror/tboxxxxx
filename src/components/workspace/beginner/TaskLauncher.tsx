@@ -201,11 +201,13 @@ interface Props {
   selectedId: string | null;
   onSelect: (scenario: TaskScenario) => void;
   priorityIds?: string[];
+  /** When true, show the "让咱们一起开启新手体验" header text */
+  showIntroHeader?: boolean;
   /** When provided, show a "认识一下" collapsed card at the top of the grid */
   introCard?: IntroCardProps;
 }
 
-export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], introCard }: Props) {
+export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], showIntroHeader = false, introCard }: Props) {
   // Reorder: priority ids first, then the rest
   const ordered = priorityIds.length > 0
     ? [
@@ -223,9 +225,13 @@ export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], i
 
   return (
     <div className="w-full mb-4">
-      <div className="text-[12px] font-semibold text-[#8e8e93] uppercase tracking-[0.6px] mb-3">
-        {priorityIds.length > 0 ? '根据你的目标，推荐先试试：' : '让咱们一起开启新手体验吧～今天想先做哪一件事？'}
-      </div>
+      {(showIntroHeader || priorityIds.length > 0) && (
+        <div className="text-[12px] font-semibold text-[#8e8e93] uppercase tracking-[0.6px] mb-3">
+          {priorityIds.length > 0
+            ? '根据你的目标，推荐先试试：'
+            : '让咱们一起开启新手体验吧～今天想先做哪一件事？'}
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-2.5">
         {/* "认识一下" intro card — first cell in the grid, same size as scenario cards */}
         {introCard && (

@@ -66,7 +66,29 @@ export async function POST(req: Request) {
       });
     }
 
-    // Pipe the SSE stream from upstream directly to the client
+    const upstreamContentType = upstreamResp.headers.get('Content-Type') ?? '';
+
+    // If upstream returns plain JSON (non-streaming proxy), convert to SSE so the
+    // client can parse it uniformly.
+    if (!upstreamContentType.includes('text/event-stream')) {
+      const data = await upstreamResp.json() as any;
+      const content: string =
+        data?.choices?.[0]?.message?.content ??
+        data?.choices?.[0]?.delta?.content ??
+        data?.reply ??
+        '抱歉，没有收到回复。';
+
+      // Wrap as a single SSE data chunk + [DONE]
+      const sseBody = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
+      return new Response(sseBody, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+      });
+    }
+
+    // Upstream is real SSE — pipe directly to the client
     const upstreamBody = upstreamResp.body;
     if (!upstreamBody) {
       return new Response(JSON.stringify({ error: 'Empty upstream response' }), {

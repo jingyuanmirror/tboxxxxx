@@ -4,14 +4,7 @@
 		{
 			"label": "Dev Server",
 			"type": "shell",
-			"command": "OPENAI_API_KEY=test OPENAI_BASE_URL=http://localhost:4000 pnpm dev",
-			"isBackground": true,
-			"problemMatcher": []
-		},
-		{
-			"label": "Dev Server",
-			"type": "shell",
-			"command": "OPENAI_API_KEY=test OPENAI_BASE_URL=http://localhost:4000 pnpm dev",
+			"command": "pnpm dev",
 			"isBackground": true,
 			"problemMatcher": []
 		}

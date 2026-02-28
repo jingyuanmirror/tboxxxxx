@@ -44,6 +44,8 @@ export default function Home() {
           appMode={appMode}
           onToggleMode={() => setAppMode(m => m === 'normal' ? 'beginner' : 'normal')}
           onOpenView={(v, tab) => {
+            // Close chat when navigating via sidebar
+            if (isChatOpen) handleCloseChat();
             // ensure initial tab is set before switching view so MarketView mounts with correct tab
             if (v === 'market' && tab) setMarketInitialTab(tab);
             else setMarketInitialTab(undefined);

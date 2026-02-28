@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
-import { ArrowLeft, Plus, Sliders, Mic } from 'lucide-react';
+import { Plus, Sliders, Mic } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -15,7 +14,8 @@ interface Message {
 function AgentAvatar() {
   return (
     <div className="w-7 h-7 flex-shrink-0 rounded-full overflow-hidden mt-0.5">
-      <Image src="/mascot.png" alt="Tbox" width={28} height={28} className="w-full h-full object-cover" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/mascot.png" alt="Tbox" width={28} height={28} className="w-full h-full object-cover" />
     </div>
   );
 }
@@ -70,7 +70,8 @@ async function streamChat(
     // Non-streaming fallback (shouldn't happen in normal flow)
     if (!contentType.includes('text/event-stream')) {
       const data = await res.json();
-      onToken(data?.reply ?? '抱歉，未收到回复。');
+      const text = data?.choices?.[0]?.message?.content ?? data?.reply ?? '抱歉，未收到回复。';
+      onToken(text);
       onDone();
       return;
     }
@@ -183,11 +184,18 @@ export default function ChatDialog({
         }
       },
       () => {
-        // Mark streaming as done
-        setMessages((prev) =>
-          prev.map((m) => (m.id === agentId ? { ...m, streaming: false } : m))
-        );
+        // Mark streaming as done; if no tokens ever arrived show a fallback
         setIsWaiting(false);
+        if (!started) {
+          setMessages((prev) => [
+            ...prev,
+            { id: agentId, sender: 'agent', text: '抱歉，暂时没有收到回复，请稍后重试。' },
+          ]);
+        } else {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === agentId ? { ...m, streaming: false } : m))
+          );
+        }
       },
       (errMsg) => {
         setIsWaiting(false);
@@ -216,16 +224,8 @@ export default function ChatDialog({
   return (
     <div className="flex flex-col h-full w-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm flex-shrink-0">
-        <button
-          onClick={onClose}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-50"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          返回
-        </button>
-        <span className="text-sm font-medium text-gray-700 truncate max-w-[50%]">{title}</span>
-        <div className="w-16" />
+      <div className="flex items-center justify-center px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm flex-shrink-0">
+        <span className="text-sm font-medium text-gray-700 truncate max-w-[60%]">{title}</span>
       </div>
 
       {/* Messages area */}
