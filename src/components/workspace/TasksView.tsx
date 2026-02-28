@@ -65,82 +65,71 @@ function TaskCard({ task, onClick }: { task: TaskPost; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="group bg-white rounded-2xl border border-[#ebebeb] p-5 flex flex-col cursor-pointer transition-all duration-200 hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 relative overflow-hidden"
+      className="group bg-white rounded-2xl border border-[#ebebeb] px-5 py-4 flex flex-col cursor-pointer transition-all duration-200 hover:shadow-[0_4px_24px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 relative overflow-hidden"
     >
       {/* Left accent bar */}
-      <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full" style={{ background: accent }} />
+      <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full" style={{ background: accent }} />
 
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-3 pl-2">
-        {/* Agent avatar as logo */}
-        <div className="w-9 h-9 rounded-xl flex-shrink-0 overflow-hidden">
+      {/* Header row: avatar + chips (left) | time · count · budget (right) */}
+      <div className="flex items-center gap-3 pl-2">
+        {/* Agent avatar */}
+        <div className="w-8 h-8 rounded-lg flex-shrink-0 overflow-hidden">
           {task.publisher.agentAvatarUrl ? (
-            <img
-              src={task.publisher.agentAvatarUrl}
-              alt={task.publisher.agentName}
-              className="w-full h-full object-cover"
-            />
+            <img src={task.publisher.agentAvatarUrl} alt={task.publisher.agentName} className="w-full h-full object-cover" />
           ) : (
-            <div
-              className="w-full h-full flex items-center justify-center text-[20px]"
-              style={{ background: `${accent}18` }}
-            >
+            <div className="w-full h-full flex items-center justify-center text-[18px]" style={{ background: `${accent}18` }}>
               {task.publisher.agentAvatar}
             </div>
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: `${accent}18`, color: accent }}
-            >
-              {TASK_CATEGORY_LABELS[task.category]}
+
+        {/* Category + status chips */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: `${accent}18`, color: accent }}>
+            {TASK_CATEGORY_LABELS[task.category]}
+          </span>
+          <StatusBadge status={task.status} />
+        </div>
+
+        {/* Right: meta info */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && (
+            <span className="text-[11px] font-semibold text-[#dc2626]">
+              {daysLeft === 0 ? '今日截止' : `${daysLeft}天截止`}
             </span>
-            <StatusBadge status={task.status} />
-          </div>
-          <h3 className="text-[14.5px] font-bold text-[#1a1a1a] leading-snug line-clamp-2 group-hover:text-[#333]">
-            {task.title}
-          </h3>
+          )}
+          <span className="text-[11px] text-[#bbb]">{formatRelativeTime(task.created_at)}</span>
+          <span className="text-[#e5e5e5]">·</span>
+          <Users className="w-3 h-3 text-[#bbb]" />
+          <span className="text-[11px] text-[#bbb]">{task.applicant_count} 人</span>
+          <span className="text-[#e5e5e5]">·</span>
+          <span className="text-[13px] font-bold text-[#1d1d1f]">{formatBudget(task.budget)}</span>
+          <span className="flex items-center gap-0.5 text-[11.5px] font-semibold text-[#f4845f] opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+            查看 <ChevronRight className="w-3 h-3" />
+          </span>
         </div>
       </div>
 
+      {/* Title */}
+      <h3 className="text-[14px] font-bold text-[#1a1a1a] leading-snug line-clamp-1 group-hover:text-[#333] mt-2 pl-2">
+        {task.title}
+      </h3>
+
       {/* Description */}
-      <p className="text-[12.5px] text-[#6b7280] line-clamp-2 leading-relaxed mb-3 pl-2">
-        {task.description.replace(/[#*`\[\]]/g, '').slice(0, 120)}…
+      <p className="text-[12.5px] text-[#6b7280] line-clamp-1 leading-relaxed mt-1 pl-2">
+        {task.description.replace(/[#*`\[\]]/g, '').slice(0, 160)}
       </p>
 
       {/* Tags */}
       {task.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3 pl-2">
-          {task.tags.slice(0, 4).map(tag => (
+        <div className="flex flex-wrap gap-1.5 mt-2 pl-2">
+          {task.tags.slice(0, 5).map(tag => (
             <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6b7280]">
               #{tag}
             </span>
           ))}
         </div>
       )}
-
-      {/* Footer: time + budget + applicants */}
-      <div className="flex items-center justify-between pt-2 border-t border-[#f5f5f7] pl-2">
-        <div className="flex items-center gap-1.5">
-          <Users className="w-3 h-3 text-[#bbb]" />
-          <span className="text-[11px] text-[#bbb]">{task.applicant_count} 人在洽谈</span>
-          <span className="text-[#d9d9d9] mx-1">·</span>
-          <span className="text-[11px] text-[#bbb]">{formatRelativeTime(task.created_at)}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && (
-            <span className="text-[11px] font-semibold text-[#dc2626]">
-              {daysLeft === 0 ? '今日截止' : `${daysLeft}天截止`}
-            </span>
-          )}
-          <span className="text-[12.5px] font-bold text-[#1d1d1f]">{formatBudget(task.budget)}</span>
-          <span className="flex items-center gap-1 text-[12px] font-semibold text-[#1a1a1a] opacity-0 group-hover:opacity-100 transition-opacity">
-            查看详情 <ChevronRight className="w-3 h-3" />
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -443,12 +432,6 @@ function TaskDetail({ task, onClose }: { task: TaskPost; onClose: () => void }) 
             >
               <ArrowLeft className="w-4 h-4 text-[#555]" />
             </button>
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: `${accent}18` }}
-            >
-              <CategoryIcon className="w-4 h-4" style={{ color: accent }} />
-            </div>
             <span className="text-[14px] font-bold text-[#1a1a1a] flex-1 truncate">{task.title}</span>
             <StatusBadge status={task.status} />
             <button onClick={onClose} className="ml-2 w-8 h-8 rounded-full hover:bg-[#f5f5f7] flex items-center justify-center transition-colors">
@@ -489,9 +472,13 @@ function TaskDetail({ task, onClose }: { task: TaskPost; onClose: () => void }) 
 
               {/* Publisher */}
               <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-[#fafafa] border border-[#f0f0f0]">
-                <PublisherAvatar avatar={task.publisher.avatar} size={40} />
+                <img
+                  src="https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MXxzZWFyY2h8MTd8fHdveG1hbiUyMHBvcnRyYWl0JTIwaGVhZHNob3R8ZW5sb3x8fHwxNzAzNDQ0MjM1fDA&lib=rb-4.0.3&q=80&w=400"
+                  alt="Lisa"
+                  className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-white"
+                />
                 <div>
-                  <div className="text-[14px] font-bold text-[#1a1a1a]">{task.publisher.name}</div>
+                  <div className="text-[14px] font-bold text-[#1a1a1a]">Lisa</div>
                   <div className="text-[12px] text-[#9a9a9a]">发布于 {formatRelativeTime(task.created_at)}</div>
                 </div>
               </div>
@@ -974,7 +961,7 @@ export default function TasksView({ search = '', onSearchChange }: { search?: st
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 pb-12">
+        <div className="grid grid-cols-1 gap-3 pb-12">
           {filtered.map(task => (
             <TaskCard key={task.id} task={task} onClick={() => setSelectedTask(task)} />
           ))}

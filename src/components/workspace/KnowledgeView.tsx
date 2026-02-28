@@ -3,9 +3,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
   Search, SlidersHorizontal, ChevronDown, LayoutGrid, List,
-  FolderOpen, FileText, FileSpreadsheet, Image, Video, Music,
-  Archive, MoreHorizontal, Upload, FolderPlus, X, Check,
-  Eye, Download, Trash2, ChevronUp, ArrowUpDown, File, MoveRight,
+  FolderOpen, MoreHorizontal, Upload, FolderPlus, X, Check,
+  Eye, Download, Trash2, ChevronUp, ArrowUpDown, MoveRight,
 } from 'lucide-react';
 import {
   albums, files, formatFileSize, FORMAT_CATEGORIES,
@@ -32,15 +31,107 @@ const FORMAT_BADGE: Record<FileFormat, { bg: string; text: string }> = {
   TXT:  { bg: '#f8fafc', text: '#64748b' },
 };
 
+/* ─── File type SVG logos (Office-style) ─────────────────── */
 function FileIcon({ format, className = 'w-5 h-5' }: { format: FileFormat; className?: string }) {
-  const p = { className };
+  // Derive pixel size from className for viewBox scaling
+  const big = className.includes('w-10');
+  const size = big ? 40 : 20;
+
+  const base = (bg: string, label: string, textColor = '#fff', fontSize?: number) => (
+    <svg width={size} height={size} viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="8" fill={bg} />
+      <text
+        x="50%" y="54%"
+        dominantBaseline="middle"
+        textAnchor="middle"
+        fill={textColor}
+        fontFamily="'Segoe UI', Arial, sans-serif"
+        fontWeight="bold"
+        fontSize={fontSize ?? (label.length > 2 ? 11 : 16)}
+        letterSpacing={label.length > 2 ? '-0.5' : '0'}
+      >{label}</text>
+    </svg>
+  );
+
   switch (format) {
-    case 'PNG': case 'JPG': return <Image {...p} />;
-    case 'MP4': return <Video {...p} />;
-    case 'MP3': return <Music {...p} />;
-    case 'ZIP': return <Archive {...p} />;
-    case 'XLSX': return <FileSpreadsheet {...p} />;
-    default: return <FileText {...p} />;
+    // Microsoft Word – blue gradient background, white W
+    case 'DOCX': return (
+      <svg width={size} height={size} viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="docx-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#2b7cd3"/>
+            <stop offset="100%" stopColor="#185abd"/>
+          </linearGradient>
+        </defs>
+        <rect width="40" height="40" rx="8" fill="url(#docx-bg)" />
+        <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fill="#fff"
+          fontFamily="'Segoe UI', Arial, sans-serif" fontWeight="bold" fontSize="18">W</text>
+      </svg>
+    );
+    // Microsoft Excel – green gradient, white X
+    case 'XLSX': return (
+      <svg width={size} height={size} viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="xlsx-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#21a366"/>
+            <stop offset="100%" stopColor="#107c41"/>
+          </linearGradient>
+        </defs>
+        <rect width="40" height="40" rx="8" fill="url(#xlsx-bg)" />
+        <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fill="#fff"
+          fontFamily="'Segoe UI', Arial, sans-serif" fontWeight="bold" fontSize="18">X</text>
+      </svg>
+    );
+    // Microsoft PowerPoint – orange/red gradient, white P
+    case 'PPTX': return (
+      <svg width={size} height={size} viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pptx-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ed6c47"/>
+            <stop offset="100%" stopColor="#c43e1c"/>
+          </linearGradient>
+        </defs>
+        <rect width="40" height="40" rx="8" fill="url(#pptx-bg)" />
+        <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fill="#fff"
+          fontFamily="'Segoe UI', Arial, sans-serif" fontWeight="bold" fontSize="18">P</text>
+      </svg>
+    );
+    // PDF – red background, white PDF
+    case 'PDF': return base('#e53935', 'PDF', '#fff', 11);
+    // Images – purple
+    case 'PNG': case 'JPG': return (
+      <svg width={size} height={size} viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="8" fill="#7c3aed" />
+        {/* Simple mountain/image icon */}
+        <rect x="8" y="10" width="24" height="18" rx="2" fill="none" stroke="#fff" strokeWidth="2.5"/>
+        <circle cx="15" cy="17" r="2.5" fill="#fff"/>
+        <polyline points="8,28 16,19 22,25 27,20 32,28" fill="rgba(255,255,255,0.35)" stroke="#fff" strokeWidth="2" strokeLinejoin="round"/>
+      </svg>
+    );
+    // Video – amber
+    case 'MP4': return (
+      <svg width={size} height={size} viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="8" fill="#d97706" />
+        {/* Play triangle */}
+        <polygon points="15,12 15,28 29,20" fill="#fff"/>
+      </svg>
+    );
+    // Audio – fuchsia
+    case 'MP3': return (
+      <svg width={size} height={size} viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="8" fill="#c026d3" />
+        <circle cx="20" cy="20" r="8" fill="none" stroke="#fff" strokeWidth="2.5"/>
+        <circle cx="20" cy="20" r="3" fill="#fff"/>
+        <line x1="20" y1="12" x2="20" y2="8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="26" y1="14" x2="29" y2="11" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    );
+    // ZIP – slate
+    case 'ZIP': return base('#475569', 'ZIP', '#fff', 11);
+    // Markdown – teal
+    case 'MD': return base('#0d9488', 'MD', '#fff', 13);
+    // Text – gray
+    default: return base('#94a3b8', 'TXT', '#fff', 11);
   }
 }
 
@@ -420,8 +511,8 @@ export default function KnowledgeView() {
 
                       {/* Thumbnail */}
                       <div className="h-30 bg-gradient-to-br from-white to-gray-50 flex items-center justify-center relative overflow-hidden">
-                        <div className="text-gray-700 opacity-60">
-                          <FileIcon format={file.format} className="w-10 h-10 text-current" />
+                        <div>
+                          <FileIcon format={file.format} className="w-10 h-10" />
                         </div>
                         {/* Hover overlay */}
                         <div className={`absolute inset-0 bg-black/10 flex items-center justify-center gap-2 transition-opacity duration-150
@@ -535,8 +626,8 @@ export default function KnowledgeView() {
                           </td>
                           <td className="py-3 px-2">
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="text-gray-700 opacity-60">
-                                <FileIcon format={file.format} className="w-5 h-5 text-current" />
+                              <span>
+                                <FileIcon format={file.format} className="w-5 h-5" />
                               </span>
                               <span className="font-medium text-gray-900 truncate max-w-[180px]" title={file.name}>
                                 {file.name}

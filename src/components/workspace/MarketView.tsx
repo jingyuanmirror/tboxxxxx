@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Star, Users, Zap, Search, Check, X, Store, ArrowRight, TrendingUp, Clock, Package,
   Globe, BarChart2, PenLine, FileText, Link2, Brain, Code2, Box, LayoutList, Briefcase,
@@ -254,8 +254,8 @@ function SkillCard({ skill, onClick, onMount, mounted }: { skill: MarketSkill; o
 }
 
 // ─── Agent Detail Modal ───────────────────────────────────────
-function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => void }) {
-  const [hired, setHired] = useState(false);
+function AgentDetail({ agent, onClose, initialHired = false, onHire }: { agent: MarketAgent; onClose: () => void; initialHired?: boolean; onHire?: () => void }) {
+  const [hired, setHired] = useState(initialHired);
   const [imgError, setImgError] = useState(false);
   const featured = agent.pricing.find(p => p.isFeatured) ?? agent.pricing[0];
 
@@ -284,7 +284,7 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
                 <span className="text-3xl">{agent.avatar}</span>
               )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold text-[#1d1d1f]">{agent.name}</h2>
                 <span className="text-[12px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6a6e73]">{ROLE_LABELS[agent.role]}</span>
@@ -296,6 +296,26 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
                   <Users className="w-3.5 h-3.5" /> 已被雇佣 {agent.hiredCount.toLocaleString()} 次
                 </span>
               </div>
+            </div>
+            {/* Hire / Trial buttons */}
+            <div className="flex flex-row gap-2 flex-shrink-0 items-start">
+              {!hired ? (
+                <>
+                  <button
+                    onClick={() => { setHired(true); onHire?.(); }}
+                    className="bg-[#1d1d1f] text-white px-4 py-2 rounded-xl text-[13px] font-semibold hover:bg-[#3a3a3c] transition-colors whitespace-nowrap"
+                  >
+                    雇佣TA · {formatPrice(featured)}
+                  </button>
+                  <button className="px-4 py-2 rounded-xl border border-[#e5e5ea] text-[13px] text-[#6a6e73] hover:bg-[#f5f5f7] transition-colors">
+                    试用
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#f0fdf4] border border-[#16a34a] text-[13px] font-semibold text-[#16a34a] whitespace-nowrap">
+                  <Check className="w-3.5 h-3.5" /> 已雇佣
+                </div>
+              )}
             </div>
           </div>
 
@@ -397,22 +417,7 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            {!hired ? (
-              <>
-                <button onClick={() => setHired(true)} className="flex-1 bg-[#1d1d1f] text-white py-3 rounded-xl text-[14px] font-semibold hover:bg-[#3a3a3c] transition-colors">
-                  雇佣TA · {formatPrice(featured)}
-                </button>
-                <button className="px-4 py-3 rounded-xl border border-[#e5e5ea] text-[14px] text-[#6a6e73] hover:bg-[#f5f5f7] transition-colors">
-                  试用
-                </button>
-              </>
-            ) : (
-              <div className="flex-1 bg-[#f0fdf4] border border-[#16a34a] py-3 rounded-xl flex items-center justify-center gap-2 text-[14px] font-semibold text-[#16a34a]">
-                <Check className="w-4 h-4" /> 已雇佣 · 已添加到工作台
-              </div>
-            )}
-          </div>
+
         </div>
       </div>
     </div>
@@ -420,8 +425,8 @@ function AgentDetail({ agent, onClose }: { agent: MarketAgent; onClose: () => vo
 }
 
 // ─── Skill Detail Modal ───────────────────────────────────────
-function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => void }) {
-  const [mounted, setMounted] = useState(false);
+function SkillDetail({ skill, onClose, initialMounted = false, onMount }: { skill: MarketSkill; onClose: () => void; initialMounted?: boolean; onMount?: () => void }) {
+  const [mounted, setMounted] = useState(initialMounted);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={onClose}>
@@ -520,7 +525,7 @@ function SkillDetail({ skill, onClose }: { skill: MarketSkill; onClose: () => vo
           <div className="pt-2">
             {!mounted ? (
               <button
-                onClick={() => setMounted(true)}
+                onClick={() => { setMounted(true); onMount?.(); }}
                 className="w-full bg-[#1d1d1f] text-white py-3 rounded-xl text-[14px] font-semibold hover:bg-[#3a3a3c] transition-colors flex items-center justify-center gap-2"
               >
                 <Zap className="w-4 h-4" /> 挂载到我的 Agent
@@ -552,8 +557,19 @@ export default function MarketView({ initialTab }: { initialTab?: MarketTab }) {
   const [selectedAgent, setSelectedAgent] = useState<MarketAgent | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<MarketSkill | null>(null);
   const [showMyPanel, setShowMyPanel] = useState(false);
-  const [hiredAgentIds, setHiredAgentIds] = useState<Set<string>>(new Set());
-  const [mountedSkillIds, setMountedSkillIds] = useState<Set<string>>(new Set());
+  const [hiredAgentIds, setHiredAgentIds] = useState<Set<string>>(() => {
+    try { const ids = JSON.parse(localStorage.getItem('hired_agent_ids') || '[]'); return new Set<string>(ids); } catch { return new Set<string>(); }
+  });
+  const [mountedSkillIds, setMountedSkillIds] = useState<Set<string>>(() => {
+    try { const ids = JSON.parse(localStorage.getItem('mounted_skill_ids') || '[]'); return new Set<string>(ids); } catch { return new Set<string>(); }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('hired_agent_ids', JSON.stringify([...hiredAgentIds])); } catch {}
+  }, [hiredAgentIds]);
+  useEffect(() => {
+    try { localStorage.setItem('mounted_skill_ids', JSON.stringify([...mountedSkillIds])); } catch {}
+  }, [mountedSkillIds]);
 
   const hiredAgents = mockAgents.filter(a => hiredAgentIds.has(a.id));
 
@@ -609,7 +625,7 @@ export default function MarketView({ initialTab }: { initialTab?: MarketTab }) {
 
       {/* ── Hero Banner ── full-bleed, breaks out of CenterMain px-8 */}
       <div
-        className="-mx-8 px-8 pt-14 pb-10 mb-8 text-center"
+        className="-mx-8 px-8 pt-14 pb-6 mb-4 text-center"
         style={{ background: 'linear-gradient(170deg, #ffffff 0%, #f7f7f8 50%, #f2f4f6 100%)' }}
       >
         <div className="flex items-center justify-center mb-3">
@@ -621,12 +637,12 @@ export default function MarketView({ initialTab }: { initialTab?: MarketTab }) {
         <h1 className="text-[34px] font-black text-[#1a1a1a] mb-2 tracking-tight leading-none">
           {tab === 'agents' ? '雇一位 AI 助手' : tab === 'skills' ? '为你的 TBOX 装备技能' : '任务招募广场'}
         </h1>
-        <p className="text-[15px] text-[#999] mb-8">
+        <p className="text-[15px] text-[#999] mb-12">
           {tab === 'agents' ? '发现各领域顶尖 AI Freelancer，立即雇佣' : tab === 'skills' ? '挑选 Skill 模块，一键挂载，解锁更强的 Agent' : '发布你的任务，让最合适的 Agent 来接单'}
         </p>
 
         {/* Search bar */}
-        <div className="relative max-w-[600px] mx-auto">
+        <div className="relative max-w-[600px] mx-auto mb-2">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#bbb]" />
           <input
             type="text"
@@ -743,8 +759,8 @@ export default function MarketView({ initialTab }: { initialTab?: MarketTab }) {
       )}
 
       {/* ── Detail Modals ── */}
-      {selectedAgent && <AgentDetail agent={selectedAgent} onClose={() => setSelectedAgent(null)} />}
-      {selectedSkill && <SkillDetail skill={selectedSkill} onClose={() => setSelectedSkill(null)} />}
+      {selectedAgent && <AgentDetail agent={selectedAgent} onClose={() => setSelectedAgent(null)} initialHired={hiredAgentIds.has(selectedAgent.id)} onHire={() => { setHiredAgentIds(prev => { const s = new Set(prev); s.add(selectedAgent.id); return s; }); }} />}
+      {selectedSkill && <SkillDetail skill={selectedSkill} onClose={() => setSelectedSkill(null)} initialMounted={mountedSkillIds.has(selectedSkill.id)} onMount={() => { setMountedSkillIds(prev => { const s = new Set(prev); s.add(selectedSkill.id); return s; }); }} />}
     </div>
   );
 }

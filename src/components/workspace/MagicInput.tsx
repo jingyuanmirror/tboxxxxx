@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useModelStore } from '../../lib/modelStore';
+import { mockAgents, mockSkills, ROLE_LABELS, CATEGORY_LABELS } from '@/lib/marketMock';
 
 /* ─── types ─── */
 interface UploadedFile {
@@ -181,12 +182,35 @@ function extBadge(name: string) {
   return FILE_TYPE_ICONS[ext] || FILE_TYPE_ICONS.default;
 }
 
+/* ─── AgentPickerItem (needs own state for img error) ─── */
+function AgentPickerItem({ agent, onSelect }: { agent: import('@/lib/marketMock').MarketAgent; onSelect: () => void }) {
+  const [imgErr, setImgErr] = useState(false);
+  return (
+    <li
+      onClick={onSelect}
+      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors list-none"
+    >
+      <div className="w-8 h-8 rounded-full overflow-hidden bg-[#f5f5f7] flex items-center justify-center flex-shrink-0">
+        {agent.avatarUrl && !imgErr
+          ? <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" onError={() => setImgErr(true)} />
+          : <span className="text-lg">{agent.avatar}</span>}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-medium text-[#1d1d1f] truncate">{agent.name}</div>
+        <div className="text-[11px] text-[#8e8e93]">{ROLE_LABELS[agent.role]}</div>
+      </div>
+      <svg className="w-3.5 h-3.5 text-[#ccc] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+    </li>
+  );
+}
+
 /* ─── component ─── */
 interface MagicInputProps {
   onSendMessage?: (message: string, model?: string) => void;
+  onOpenMarket?: (tab: 'agents' | 'skills') => void;
 }
 
-export default function MagicInput({ onSendMessage }: MagicInputProps) {
+export default function MagicInput({ onSendMessage, onOpenMarket }: MagicInputProps) {
   const [inputValue, setInputValue]       = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -199,19 +223,29 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
   const [isModelOpen, setIsModelOpen] = useState(false);
   const { selectedModel, setSelectedModel } = useModelStore();
 
+  // Mention metadata: stores display `@name` + resolved id/type for send reconstruction
+  interface MentionToken { placeholder: string; id: string; type: 'agent' | 'skill' | 'file'; name: string; }
+  const [mentions, setMentions]           = useState<MentionToken[]>([]);
+
   const [isPickerOpen, setIsPickerOpen]   = useState(false);
-  const [activeTab, setActiveTab]         = useState<'files' | 'skills'>('files');
+  const [activeTab, setActiveTab]         = useState<'files' | 'agents' | 'skills'>('files');
   const [searchQuery, setSearchQuery]     = useState('');
   const [repoFiles, setRepoFiles]         = useState<RepoFile[]>([]);
   const [recentFiles, setRecentFiles]     = useState<RepoFile[]>([]);
   const [recentSkills, setRecentSkills]   = useState<RecentSkill[]>([]);
+  const [hiredAgentIds, setHiredAgentIds] = useState<string[]>([]);
+  const [mountedSkillIds, setMountedSkillIds] = useState<string[]>([]);
 
   useEffect(() => {
     try {
       const rf = JSON.parse(localStorage.getItem('recent_files') || '[]');
       const rs = JSON.parse(localStorage.getItem('recent_skills') || '[]');
+      const ha = JSON.parse(localStorage.getItem('hired_agent_ids') || '[]');
+      const ms = JSON.parse(localStorage.getItem('mounted_skill_ids') || '[]');
       if (Array.isArray(rf)) setRecentFiles(rf);
       if (Array.isArray(rs)) setRecentSkills(rs);
+      if (Array.isArray(ha)) setHiredAgentIds(ha);
+      if (Array.isArray(ms)) setMountedSkillIds(ms);
     } catch (_) {}
   }, []);
 
@@ -231,7 +265,7 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
     });
   };
 
-  const openPicker = async (tab: 'files' | 'skills' = 'files') => {
+  const openPicker = async (tab: 'files' | 'agents' | 'skills' = 'files') => {
     setActiveTab(tab);
     setSearchQuery('');
     setIsPickerOpen(true);
@@ -248,10 +282,26 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
     }
   };
 
+  // Insert a mention: store only display text (@name) in inputValue; metadata in mentions array
+  const insertToken = (name: string, id: string, type: 'agent' | 'skill' | 'file') => {
+    const placeholder = `@${name}`;
+    setInputValue(v => {
+      const idx = v.lastIndexOf('@');
+      if (idx !== -1) {
+        return v.slice(0, idx) + placeholder + v.slice(idx + 1);
+      }
+      return v ? `${v} ${placeholder}` : placeholder;
+    });
+    setMentions(prev => [
+      ...prev.filter(m => !(m.placeholder === placeholder && m.id === id)),
+      { placeholder, id, type, name },
+    ]);
+    setIsPickerOpen(false);
+  };
+
   const insertFileRef = (f: RepoFile) => {
     saveRecentFile(f);
-    setInputValue(v => v ? `${v} @[${f.name}](${f.path})` : `@[${f.name}](${f.path})`);
-    setIsPickerOpen(false);
+    insertToken(f.name, f.path, 'file');
   };
 
   const runSkill = async (skillKey: string) => {
@@ -305,13 +355,72 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
+    // Reconstruct full mention syntax from metadata before sending
+    let msg = inputValue;
+    mentions.forEach(m => {
+      const full = m.type === 'file'
+        ? `@[${m.name}](${m.id})`
+        : `@[${m.name}](${m.type}:${m.id})`;
+      msg = msg.replaceAll(m.placeholder, full);
+    });
     const metaPrefix = selectedMode ? `【tool_mode:${selectedMode.iconKey} sub_tool:${selectedSubTool?.key || ''}】 ` : '';
-    onSendMessage?.(`${metaPrefix}${inputValue}`, selectedModel?.key);
+    onSendMessage?.(`${metaPrefix}${msg}`, selectedModel?.key);
     setInputValue('');
+    setMentions([]);
   };
 
   const filteredFiles  = repoFiles.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredSkills = SKILLS.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const hiredAgents = mockAgents.filter(a => hiredAgentIds.includes(a.id)).filter(a => !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()) || a.slogan.toLowerCase().includes(searchQuery.toLowerCase()));
+  const mountedSkills = mockSkills.filter(s => mountedSkillIds.includes(s.id)).filter(s => !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  // Render overlay HTML: known @mention chips are highlighted; {placeholders} get blue marks
+  const renderOverlay = (val: string): string => {
+    if (!val) return `<span style="color:#a1a1a6;">请直接吩咐任务：例如，将芯片报告初稿转化为高管演示 PPT...</span>`;
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const formatPlain = (s: string) =>
+      esc(s)
+        .replace(/\n/g, '<br/>')
+        .replace(/\{([^}]+)\}/g, '<mark style="background:rgba(37,99,235,0.10);color:#1d4ed8;border-radius:4px;padding:1px 3px;font-style:normal;border:1px solid rgba(37,99,235,0.25);">$&</mark>');
+    if (mentions.length === 0) return formatPlain(val);
+    // Build regex from known mention placeholders (longest first to avoid partial matches)
+    const sorted = [...mentions].sort((a, b) => b.placeholder.length - a.placeholder.length);
+    const pattern = sorted.map(m => m.placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const MENTION_RE = new RegExp(`(${pattern})`, 'g');
+    const parts: string[] = [];
+    let last = 0;
+    let match: RegExpExecArray | null;
+    while ((match = MENTION_RE.exec(val)) !== null) {
+      if (match.index > last) parts.push(formatPlain(val.slice(last, match.index)));
+      const name = match[1].slice(1); // strip leading @
+      // No extra padding/border so overlay character widths match textarea exactly (caret alignment)
+      parts.push(`<mark style="background:rgba(37,99,235,0.09);color:#1d4ed8;font-weight:600;font-style:normal;border-radius:3px;padding:0;margin:0;border:none;">@${esc(name)}</mark>`);
+      last = match.index + match[1].length;
+    }
+    if (last < val.length) parts.push(formatPlain(val.slice(last)));
+    return parts.join('');
+  };
+
+  // Detect @ trigger; auto-remove mentions no longer present in text
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newVal = e.target.value;
+    const cursor = e.target.selectionStart ?? newVal.length;
+
+    // Remove mentions whose placeholder was deleted from the text
+    setMentions(prev => prev.filter(m => newVal.includes(m.placeholder)));
+
+    // Detect standalone @ being typed → open agent picker
+    if (newVal.length > inputValue.length) {
+      const charAdded = newVal.slice(0, cursor).slice(-1);
+      if (charAdded === '@') {
+        setInputValue(newVal);
+        openPicker('agents');
+        return;
+      }
+    }
+
+    setInputValue(newVal);
+  };
 
   return (
     <div
@@ -367,29 +476,43 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
             wordBreak: 'break-word',
             lineHeight: '1.5',
           }}
-          dangerouslySetInnerHTML={{
-            __html: inputValue
-              ? inputValue
-                  .replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/\n/g, '<br/>')
-                  .replace(
-                    /\{([^}]+)\}/g,
-                    '<mark style="background:rgba(37,99,235,0.10);color:#1d4ed8;border-radius:4px;padding:1px 3px;font-style:normal;border:1px solid rgba(37,99,235,0.25);">$&</mark>'
-                  )
-              : `<span style="color:#a1a1a6;">请直接吩咐任务：例如，将芯片报告初稿转化为高管演示 PPT...</span>`
-          }}
+          dangerouslySetInnerHTML={{ __html: renderOverlay(inputValue) }}
         />
         {/* Actual textarea: transparent text + visible caret */}
         <textarea
           ref={textareaRef}
           value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
+          onChange={handleInputChange}
           className="relative w-full border-none bg-transparent font-['Inter'] text-base resize-none outline-none min-h-[60px] pt-0"
           style={{ color: 'transparent', caretColor: '#1d1d1f', lineHeight: '1.5' }}
           onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); return; }
+            // Atomically delete entire @name mention token on Backspace/Delete
+            if ((e.key === 'Backspace' || e.key === 'Delete') && mentions.length > 0) {
+              const pos = textareaRef.current?.selectionStart ?? 0;
+              const selEnd = textareaRef.current?.selectionEnd ?? pos;
+              if (pos === selEnd) {
+                for (const mn of mentions) {
+                  const ph = mn.placeholder;
+                  let searchFrom = 0;
+                  while (true) {
+                    const found = inputValue.indexOf(ph, searchFrom);
+                    if (found === -1) break;
+                    const end = found + ph.length;
+                    const hitBackspace = e.key === 'Backspace' && pos > found && pos <= end;
+                    const hitDelete    = e.key === 'Delete'    && pos >= found && pos < end;
+                    if (hitBackspace || hitDelete) {
+                      e.preventDefault();
+                      const newVal = inputValue.slice(0, found) + inputValue.slice(end);
+                      setInputValue(newVal);
+                      setMentions(prev => prev.filter(m => m !== mn || newVal.includes(ph)));
+                      return;
+                    }
+                    searchFrom = found + 1;
+                  }
+                }
+              }
+            }
           }}
         />
       </div>
@@ -437,28 +560,20 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
                 {/* header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[14px] font-semibold text-[#1d1d1f] whitespace-nowrap">选择文件或者智能体</span>
+                    <span className="text-[14px] font-semibold text-[#1d1d1f] whitespace-nowrap">选择引用内容</span>
                     <div className="flex items-center gap-0.5 bg-[#f2f2f4] rounded-lg p-0.5">
-                      {(['files', 'skills'] as const).map(tab => (
+                      {(['files', 'agents', 'skills'] as const).map(tab => (
                         <button
                           key={tab}
                           onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
                           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors ${activeTab === tab ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#666]'}`}
                         >
                           {tab === 'files' ? (
-                            <>
-                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                              </svg>
-                              文件
-                            </>
+                            <><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>文件</>
+                          ) : tab === 'agents' ? (
+                            <><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>人才</>
                           ) : (
-                            <>
-                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                              </svg>
-                              智能体
-                            </>
+                            <><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>技能</>
                           )}
                         </button>
                       ))}
@@ -467,8 +582,10 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
                   <div className="flex items-center gap-3">
                     {activeTab === 'files' ? (
                       <a href="/knowledge" className="text-[12px] text-[#2563eb] hover:underline whitespace-nowrap">进入知识库 →</a>
+                    ) : activeTab === 'agents' ? (
+                      <button onClick={() => { setIsPickerOpen(false); onOpenMarket?.('agents'); }} className="text-[12px] text-[#2563eb] hover:underline whitespace-nowrap">人才广场 →</button>
                     ) : (
-                      <a href="/market" className="text-[12px] text-[#2563eb] hover:underline whitespace-nowrap">智能体市场 →</a>
+                      <button onClick={() => { setIsPickerOpen(false); onOpenMarket?.('skills'); }} className="text-[12px] text-[#2563eb] hover:underline whitespace-nowrap">装备铺 →</button>
                     )}
                     <button onClick={() => setIsPickerOpen(false)} className="text-[#999] hover:text-[#1d1d1f] transition-colors">
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -487,72 +604,92 @@ export default function MagicInput({ onSendMessage }: MagicInputProps) {
                     <input
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      placeholder={activeTab === 'files' ? '搜索文件名…' : '搜索智能体名称或功能…'}
+                      placeholder={activeTab === 'files' ? '搜索文件名…' : activeTab === 'agents' ? '搜索已雇佣的人才…' : '搜索已挂载的技能…'}
                       className="flex-1 bg-transparent outline-none text-[13px] text-[#333] placeholder:text-[#aaa]"
                       autoFocus
                     />
                   </div>
                 </div>
 
-                {/* body: recent only */}
+                {/* body */}
                 <div className="overflow-y-auto p-4" style={{ maxHeight: '280px' }}>
-                  <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wide mb-2">最近使用</p>
                   {activeTab === 'files' ? (
-                    recentFiles.length === 0 ? (
-                      <div className="flex flex-col items-center py-8 gap-2">
-                        <svg className="w-8 h-8 text-[#ddd]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                        </svg>
-                        <p className="text-sm text-[#bbb] text-center">暂无最近使用的文件</p>
-                        <a href="/knowledge" className="text-[12px] text-[#2563eb] hover:underline">前往知识库选择文件 →</a>
-                      </div>
-                    ) : (
-                      <ul className="flex flex-col gap-1">
-                        {recentFiles.slice(0, 5).map(f => {
-                          const badge = extBadge(f.name);
-                          return (
-                            <li
-                              key={f.path}
-                              onClick={() => insertFileRef(f)}
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors"
-                            >
-                              <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-md text-white text-[9px] font-bold" style={{ backgroundColor: badge.color }}>
-                                {badge.label}
-                              </span>
-                              <span className="text-[13px] text-[#333] truncate flex-1">{f.name}</span>
-                              <svg className="w-3.5 h-3.5 text-[#ccc] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )
+                    <>
+                      <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wide mb-2">最近使用</p>
+                      {recentFiles.length === 0 ? (
+                        <div className="flex flex-col items-center py-8 gap-2">
+                          <svg className="w-8 h-8 text-[#ddd]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                          </svg>
+                          <p className="text-sm text-[#bbb] text-center">暂无最近使用的文件</p>
+                          <a href="/knowledge" className="text-[12px] text-[#2563eb] hover:underline">前往知识库选择文件 →</a>
+                        </div>
+                      ) : (
+                        <ul className="flex flex-col gap-1">
+                          {recentFiles.slice(0, 5).map(f => {
+                            const badge = extBadge(f.name);
+                            return (
+                              <li key={f.path} onClick={() => insertFileRef(f)} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors">
+                                <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-md text-white text-[9px] font-bold" style={{ backgroundColor: badge.color }}>{badge.label}</span>
+                                <span className="text-[13px] text-[#333] truncate flex-1">{f.name}</span>
+                                <svg className="w-3.5 h-3.5 text-[#ccc] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </>
+                  ) : activeTab === 'agents' ? (
+                    <>
+                      <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wide mb-2">已雇佣 ({hiredAgents.length})</p>
+                      {hiredAgents.length === 0 ? (
+                        <div className="flex flex-col items-center py-8 gap-2">
+                          <svg className="w-8 h-8 text-[#ddd]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                          </svg>
+                          <p className="text-sm text-[#bbb] text-center">尚未雇佣任何人才</p>
+                          <button onClick={() => { setIsPickerOpen(false); onOpenMarket?.('agents'); }} className="text-[12px] text-[#2563eb] hover:underline">前往人才广场 →</button>
+                        </div>
+                      ) : (
+                        <ul className="flex flex-col gap-1">
+                          {hiredAgents.map(agent => (
+                            <AgentPickerItem
+                              key={agent.id}
+                              agent={agent}
+                              onSelect={() => insertToken(agent.name, agent.id, 'agent')}
+                            />
+                          ))}
+                        </ul>
+                      )}
+                    </>
                   ) : (
-                    recentSkills.length === 0 ? (
-                      <p className="text-sm text-[#bbb] text-center py-8">暂无最近智能体</p>
-                    ) : (
-                      <ul className="flex flex-col gap-1">
-                        {recentSkills.slice(0, 5).map(s => {
-                          const meta = SKILLS.find(sk => sk.key === s.key);
-                          return (
-                            <li
-                              key={s.key}
-                              onClick={async () => { await runSkill(s.key); setIsPickerOpen(false); }}
-                              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors"
-                            >
-                              <span className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-gradient-to-br ${meta?.color ?? 'from-gray-400 to-gray-600'}`}>
-                                {s.name.slice(0, 2)}
-                              </span>
-                              <span className="text-[13px] text-[#333] truncate flex-1">{s.name}</span>
-                              <svg className="w-3.5 h-3.5 text-[#ccc] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
+                    <>
+                      <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wide mb-2">已挂载 ({mountedSkills.length})</p>
+                      {mountedSkills.length === 0 ? (
+                        <div className="flex flex-col items-center py-8 gap-2">
+                          <svg className="w-8 h-8 text-[#ddd]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                          </svg>
+                          <p className="text-sm text-[#bbb] text-center">尚未挂载任何技能</p>
+                          <button onClick={() => { setIsPickerOpen(false); onOpenMarket?.('skills'); }} className="text-[12px] text-[#2563eb] hover:underline">前往装备铺 →</button>
+                        </div>
+                      ) : (
+                        <ul className="flex flex-col gap-1">
+                          {mountedSkills.map(skill => (
+                            <li key={skill.id}
+                              onClick={() => insertToken(skill.name, skill.id, 'skill')}
+                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5f5f7] cursor-pointer transition-colors">
+                              <div className="w-8 h-8 rounded-xl bg-[#f5f5f7] flex items-center justify-center text-xl flex-shrink-0">{skill.icon}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[13px] font-medium text-[#1d1d1f] truncate">{skill.name}</div>
+                                <div className="text-[11px] text-[#8e8e93]">{CATEGORY_LABELS[skill.category]}</div>
+                              </div>
+                              <svg className="w-3.5 h-3.5 text-[#ccc] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                             </li>
-                          );
-                        })}
-                      </ul>
-                    )
+                          ))}
+                        </ul>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

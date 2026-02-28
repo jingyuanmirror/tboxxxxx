@@ -10,7 +10,7 @@ export default function Home() {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarVisible, setIsRightSidebarVisible] = useState(true);
   const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'>('home');
-  const [marketInitialTab, setMarketInitialTab] = useState<'agents'|'skills'|undefined>(undefined);
+  const [marketInitialTab, setMarketInitialTab] = useState<'agents'|'skills'|'tasks'|undefined>(undefined);
 
   // Chat state lifted here so Header & RightSidebar can be hidden
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -57,6 +57,10 @@ export default function Home() {
           chatInitialMessage={chatInitialMessage}
           onOpenChat={handleOpenChat}
           onCloseChat={handleCloseChat}
+          onOpenMarket={(tab) => {
+            setMarketInitialTab(tab);
+            setActiveView('market');
+          }}
         />
         
         {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && <RightSidebar isVisible={isRightSidebarVisible} />}

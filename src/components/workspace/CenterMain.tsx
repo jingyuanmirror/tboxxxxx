@@ -27,15 +27,16 @@ const initialItems: ConfirmItem[] = [
 interface CenterMainProps {
   isLeftSidebarCollapsed: boolean;
   activeView?: 'home' | 'knowledge' | 'scheduled' | 'market';
-  marketInitialTab?: 'agents' | 'skills';
+  marketInitialTab?: 'agents' | 'skills' | 'tasks';
   onCloseScheduledTasks?: () => void;
   isChatOpen?: boolean;
   chatInitialMessage?: string;
   onOpenChat?: (message: string) => void;
   onCloseChat?: () => void;
+  onOpenMarket?: (tab: 'agents' | 'skills') => void;
 }
 
-export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat }: CenterMainProps) {
+export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat, onOpenMarket }: CenterMainProps) {
   const [items, setItems] = useState<ConfirmItem[]>(initialItems);
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
@@ -282,7 +283,7 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
             </div>
             {/* Magic Input — with comfortable spacing below greeting */}
             <div className="w-full mt-10">
-              <MagicInput onSendMessage={handleMagicInputSend} />
+              <MagicInput onSendMessage={handleMagicInputSend} onOpenMarket={onOpenMarket} />
             </div>
           </>
         )}
