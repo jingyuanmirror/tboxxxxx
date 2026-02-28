@@ -61,8 +61,22 @@ async function streamChat(
     if (!res.ok) {
       const errText = await res.text().catch(() => `HTTP ${res.status}`);
       let errMsg = errText;
-      try { errMsg = JSON.parse(errText)?.error ?? errText; } catch {}
-      onError('抱歉，服务出错：' + errMsg);
+      try {
+        const parsed = JSON.parse(errText);
+        // parsed.error may be a string or a nested object with .message
+        const raw = parsed?.error;
+        errMsg = typeof raw === 'string' ? raw : (raw?.message ?? errText);
+      } catch {}
+      // Map known status codes to friendly Chinese messages
+      const status = res.status;
+      if (status === 429) {
+        errMsg = '请求太频繁，请稍等片刻再试 🙏';
+      } else if (status === 401 || status === 403) {
+        errMsg = '服务授权失败，请联系管理员';
+      } else if (status >= 500) {
+        errMsg = '服务暂时不可用，请稍后重试';
+      }
+      onError('抱歉，' + errMsg);
       return;
     }
 

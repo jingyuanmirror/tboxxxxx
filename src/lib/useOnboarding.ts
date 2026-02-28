@@ -28,6 +28,10 @@ export interface OnboardingState {
 
 const STORAGE_KEY = 'tbox_onboarding_state';
 
+// Module-level cache: survives React component mount/unmount within the same
+// browser session, but is reset on a full page reload (unlike localStorage).
+let _sessionCache: OnboardingState | null = null;
+
 const FEATURE_UNLOCK_MAP: Record<string, OnboardingStage[]> = {
   history:   ['first_task_started', 'first_task_done', 'growing'],
   knowledge: ['introduced', 'first_task_started', 'first_task_done', 'growing'],
@@ -45,25 +49,15 @@ function defaultState(): OnboardingState {
   };
 }
 
-function loadState(): OnboardingState {
-  if (typeof window === 'undefined') return defaultState();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState();
-    return JSON.parse(raw) as OnboardingState;
-  } catch {
-    return defaultState();
-  }
-}
-
 function saveState(s: OnboardingState) {
+  _sessionCache = s;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
   } catch (_) {}
 }
 
 export function useOnboarding() {
-  const [state, setState] = useState<OnboardingState>(defaultState);
+  const [state, setState] = useState<OnboardingState>(() => _sessionCache ?? defaultState());
 
   const update = useCallback((partial: Partial<OnboardingState>) => {
     setState(prev => {

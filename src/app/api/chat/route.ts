@@ -60,7 +60,16 @@ export async function POST(req: Request) {
 
     if (!upstreamResp.ok) {
       const text = await upstreamResp.text();
-      return new Response(JSON.stringify({ error: text }), {
+      // Try to extract a human-readable message from the upstream error JSON
+      let friendlyMsg = text;
+      try {
+        const parsed = JSON.parse(text);
+        friendlyMsg =
+          parsed?.error?.message ??
+          parsed?.message ??
+          text;
+      } catch {}
+      return new Response(JSON.stringify({ error: friendlyMsg, status: upstreamResp.status }), {
         status: upstreamResp.status,
         headers: { 'Content-Type': 'application/json' },
       });
