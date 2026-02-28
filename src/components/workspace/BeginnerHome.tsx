@@ -41,7 +41,7 @@ function buildGreeting(stage: string, profile: UserProfile | null, introSkipped:
   }
   return {
     title: '嗨，我是 Tbox 👋',
-    subtitle: '你的 AI 工作搭子，专门帮你处理那些繁琐但重要的事。先认识一下你，我才能更好地帮到你 →',
+    subtitle: '你的 AI 搭子，专门帮你处理那些繁琐但重要的事，今后请多多指教',
   };
 }
 
@@ -61,7 +61,27 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
   const [selectedScenario, setSelectedScenario] = useState<TaskScenario | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [liveUseCases, setLiveUseCases] = useState<string[]>([]);
+  const [liveOccupation, setLiveOccupation] = useState('');
   const [introExpanded, setIntroExpanded] = useState(false);
+  const [prefillValue, setPrefillValue] = useState('');
+  const [prefillMode, setPrefillMode] = useState('');
+
+  const handlePrefill = (text: string, modeKey?: string) => {
+    setPrefillValue(text);
+    setPrefillMode(modeKey ?? '');
+  };
+
+  const OCCUPATION_USE_CASES: Record<string, string[]> = {
+    '产品经理': ['写方案', '做报告', '搜信息'],
+    '运营':    ['写方案', '做报告', '做 PPT'],
+    '销售':    ['发邮件', '写方案', '搜信息'],
+    '创业者':  ['做报告', '做 PPT', '写方案'],
+    '市场/品牌': ['写方案', '做 PPT', '做报告'],
+    '研究员':  ['做报告', '数据分析', '搜信息'],
+    '设计师':  ['搜信息', '写方案', '做 PPT'],
+    '工程师':  ['写代码', '搜信息', '做报告'],
+    '学生':    ['搜信息', '做报告', '写方案'],
+  };
 
   // Show unlock banner when first_task_done triggers
   useEffect(() => {
@@ -112,14 +132,15 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
             onSkip={() => { skipIntro(); setIntroExpanded(false); }}
             onClose={() => setIntroExpanded(false)}
             onUseCasesChange={setLiveUseCases}
+            onOccupationChange={setLiveOccupation}
           />
-          {/* Task suggestions appear here when use cases are selected, replacing the CTA */}
-          {liveUseCases.length > 0 && (
+          {/* Task suggestions appear when occupation or use cases are selected */}
+          {(liveUseCases.length > 0 || liveOccupation) && (
             <SmartInputHints
-              chips={getPreferredChips(liveUseCases)}
-              onSelect={(chip) => {
+              chips={getPreferredChips(liveUseCases.length > 0 ? liveUseCases : (OCCUPATION_USE_CASES[liveOccupation] ?? []))}
+              onSelect={(text, modeKey) => {
                 setIntroExpanded(false);
-                handleSend(chip);
+                handlePrefill(text, modeKey);
               }}
             />
           )}
@@ -138,17 +159,19 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
 
       {/* Smart Input Area */}
       <div className="w-full mt-2">
-        {/* Hint chips: shown when a scenario is selected — clicking fires the task directly */}
+        {/* Hint chips: shown when a scenario is selected — clicking fills the input */}
         {selectedScenario && (
           <SmartInputHints
             chips={selectedScenario.chips}
-            onSelect={(chip) => handleSend(chip)}
+            onSelect={(text, modeKey) => handlePrefill(text, modeKey)}
           />
         )}
 
         <MagicInput
           compact
           onSendMessage={handleSend}
+          prefillValue={prefillValue}
+          prefillMode={prefillMode}
         />
 
         <p className="text-[11.5px] text-[#a1a1a6] mt-2 text-center">

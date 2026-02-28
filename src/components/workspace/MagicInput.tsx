@@ -209,17 +209,36 @@ interface MagicInputProps {
   onSendMessage?: (message: string, model?: string) => void;
   onOpenMarket?: (tab: 'agents' | 'skills') => void;
   compact?: boolean;
+  prefillValue?: string;
+  /** iconKey of the mode to activate (ppt | web | excel | code | mail) */
+  prefillMode?: string;
 }
 
-export default function MagicInput({ onSendMessage, onOpenMarket, compact = false }: MagicInputProps) {
+export default function MagicInput({ onSendMessage, onOpenMarket, compact = false, prefillValue, prefillMode }: MagicInputProps) {
   const [inputValue, setInputValue]       = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
 
+  // Fill input when an external prefillValue is provided
+  useEffect(() => {
+    if (prefillValue) {
+      setInputValue(prefillValue);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    }
+  }, [prefillValue]);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedMode, setSelectedMode]     = useState<typeof MODES[0] | null>(null);
   const [selectedSubTool, setSelectedSubTool] = useState<SubTool | null>(null);
+
+  // Activate mode when an external prefillMode iconKey is provided
+  useEffect(() => {
+    if (prefillMode) {
+      const match = MODES.find(m => m.iconKey === prefillMode);
+      if (match) setSelectedMode(match);
+    }
+  }, [prefillMode]);
 
   const [isModelOpen, setIsModelOpen] = useState(false);
   const { selectedModel, setSelectedModel } = useModelStore();

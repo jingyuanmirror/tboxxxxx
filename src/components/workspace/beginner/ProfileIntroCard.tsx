@@ -19,10 +19,12 @@ interface Props {
   onSkip: () => void;
   onClose?: () => void;
   onUseCasesChange?: (useCases: string[]) => void;
+  onOccupationChange?: (occupation: string) => void;
 }
 
-export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip, onClose, onUseCasesChange }: Props) {
+export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip, onClose, onUseCasesChange, onOccupationChange }: Props) {
   const [name, setName] = useState('');
+  const [aiName, setAiName] = useState('');
   const [occupation, setOccupation] = useState('');
   const [useCases, setUseCases] = useState<string[]>([]);
 
@@ -60,7 +62,7 @@ export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip,
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* Name */}
+        {/* User Name */}
         <div className="flex items-center gap-3">
           <label className="flex-shrink-0 text-[13.5px] font-semibold text-[#1d1d1f] whitespace-nowrap">
             你想我怎么称呼你？
@@ -69,7 +71,21 @@ export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip,
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="你也可以帮我重新起个名字"
+            placeholder={`例如：${defaultName}`}
+            className="flex-1 px-3.5 py-2 rounded-xl border border-[rgba(0,0,0,0.1)] bg-white text-[13.5px] text-[#1d1d1f] placeholder:text-[#c7c7cc] outline-none transition-all focus:border-[#2563eb] focus:ring-2 focus:ring-[rgba(37,99,235,0.12)]"
+          />
+        </div>
+
+        {/* AI Name */}
+        <div className="flex items-center gap-3">
+          <label className="flex-shrink-0 text-[13.5px] font-semibold text-[#1d1d1f] whitespace-nowrap">
+            当然，你也可以给我起个昵称
+          </label>
+          <input
+            type="text"
+            value={aiName}
+            onChange={e => setAiName(e.target.value)}
+            placeholder="默认叫 Tbox，随便起~"
             className="flex-1 px-3.5 py-2 rounded-xl border border-[rgba(0,0,0,0.1)] bg-white text-[13.5px] text-[#1d1d1f] placeholder:text-[#c7c7cc] outline-none transition-all focus:border-[#2563eb] focus:ring-2 focus:ring-[rgba(37,99,235,0.12)]"
           />
         </div>
@@ -77,13 +93,17 @@ export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip,
         {/* Occupation */}
         <div>
           <label className="text-[11px] font-semibold text-[#8e8e93] uppercase tracking-[0.5px] mb-1.5 block">
-            职业 / 行业
+            你是做什么的呢？
           </label>
           <div className="flex flex-wrap gap-2">
             {OCCUPATIONS.map(occ => (
               <button
                 key={occ}
-                onClick={() => setOccupation(prev => prev === occ ? '' : occ)}
+                onClick={() => {
+                  const next = occupation === occ ? '' : occ;
+                  setOccupation(next);
+                  onOccupationChange?.(next);
+                }}
                 className={`px-3 py-1.5 rounded-full text-[12.5px] font-medium transition-all cursor-pointer border ${
                   occupation === occ
                     ? 'bg-[#2563eb] text-white border-[#2563eb]'
@@ -99,7 +119,7 @@ export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip,
         {/* Use Cases */}
         <div>
           <label className="text-[11px] font-semibold text-[#8e8e93] uppercase tracking-[0.5px] mb-1.5 block">
-            主要用来做什么（可多选）
+            主要希望我帮助你做什么？（可多选）
           </label>
           <div className="flex flex-wrap gap-2">
             {USE_CASES.map(tag => (
@@ -119,18 +139,6 @@ export default function ProfileIntroCard({ defaultName = 'Lisa', onSave, onSkip,
         </div>
       </div>
 
-      {/* CTA — hidden when use cases are selected (task suggestions appear outside instead) */}
-      {useCases.length === 0 && (
-        <div className="mt-5 flex items-center gap-3">
-          <button
-            onClick={() => onSave({ name: name.trim(), occupation, useCases })}
-            disabled={!canSave}
-            className="px-5 py-2.5 rounded-xl bg-[#2563eb] text-white text-[13.5px] font-semibold transition-all cursor-pointer hover:bg-[#1d4ed8] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            开始体验 →
-          </button>
-        </div>
-      )}
     </div>
   );
 }

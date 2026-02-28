@@ -13,6 +13,7 @@ export interface UserProfile {
   name: string;
   occupation: string;
   useCases: string[];
+  aiName?: string;
 }
 
 export interface OnboardingState {

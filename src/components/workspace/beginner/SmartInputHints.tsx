@@ -1,8 +1,14 @@
 'use client';
 
+interface Chip {
+  label: string;
+  text: string;
+  modeKey?: string;
+}
+
 interface Props {
-  chips: string[];
-  onSelect: (chip: string) => void;
+  chips: Chip[];
+  onSelect: (text: string, modeKey?: string) => void;
 }
 
 export default function SmartInputHints({ chips, onSelect }: Props) {
@@ -16,7 +22,7 @@ export default function SmartInputHints({ chips, onSelect }: Props) {
         {chips.map((chip, i) => (
           <button
             key={i}
-            onClick={() => onSelect(chip)}
+            onClick={() => onSelect(chip.text, chip.modeKey)}
             className="group flex items-center gap-3 px-4 py-3 rounded-2xl border border-[rgba(0,0,0,0.07)] bg-[rgba(255,255,255,0.85)] hover:border-[rgba(37,99,235,0.35)] hover:bg-[rgba(37,99,235,0.04)] transition-all cursor-pointer text-left"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
           >
@@ -24,7 +30,7 @@ export default function SmartInputHints({ chips, onSelect }: Props) {
               <span className="w-1.5 h-1.5 rounded-full bg-[#d1d5db] group-hover:bg-[#2563eb] transition-colors" />
             </span>
             <span className="text-[13px] text-[#374151] group-hover:text-[#1d1d1f] leading-snug transition-colors">
-              {chip}
+              {chip.label}
             </span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
               className="w-3.5 h-3.5 ml-auto flex-shrink-0 text-[#c7c7cc] group-hover:text-[#2563eb] transition-colors opacity-0 group-hover:opacity-100">
