@@ -42,6 +42,13 @@ export interface MyAgent {
   listing?: ListingInfo;  // only for source === 'built'
 }
 
+export interface SkillPurchaseInfo {
+  pricing: { type: 'free' | 'subscription' | 'pay_per_use'; price?: number; currency: 'CNY'; period?: 'month' | 'year' };
+  // subscription: how many months subscribed; pay_per_use: total calls consumed
+  usageCount: number;
+  renewAt?: string;   // ISO date, for subscription
+}
+
 export interface MySkill {
   id: string;
   name: string;
@@ -54,7 +61,8 @@ export interface MySkill {
   createdAt: string;
   marketId?: string;
   config?: Record<string, unknown>;
-  listing?: ListingInfo;  // only for source === 'built'
+  listing?: ListingInfo;      // only for source === 'built'
+  purchaseInfo?: SkillPurchaseInfo; // only for source === 'purchased'
 }
 
 // ─── Mock My Agents ────────────────────────────────────────────────────────
@@ -119,6 +127,17 @@ export const myAgents: MyAgent[] = [
     hireDuration: '5 天',
     projectCount: 3,
   },
+  {
+    id: 'ma-5',
+    name: '全能工作流助手',
+    avatar: '🤖',
+    role: 'assistant',
+    slogan: '集搜索、分析、可视化、推送、存储于一身的超级工作流维小助手',
+    mountedSkillIds: ['ms-1', 'ms-2', 'ms-3', 'ms-4', 'ms-5', 'ms-6', 'ms-7', 'ms-8', 'ms-9', 'ms-10'],
+    source: 'built',
+    isEnabled: true,
+    createdAt: '2026-03-01',
+  },
 ];
 
 // ─── Mock My Skills ────────────────────────────────────────────────────────
@@ -131,7 +150,7 @@ export const mySkills: MySkill[] = [
     description: '根据竞品名称实时抓取最新新闻，整理成5条摘要推送',
     source: 'built',
     isEnabled: true,
-    usedByAgentIds: ['ma-1'],
+    usedByAgentIds: ['ma-1', 'ma-5'],
     createdAt: '2026-02-10',
     config: { resultCount: 5, sources: ['Google News', '百度新闻'] },
     listing: {
@@ -150,8 +169,16 @@ export const mySkills: MySkill[] = [
     description: '按设定时间将内容推送到指定渠道（邮件/企微/飞书）',
     source: 'built',
     isEnabled: true,
-    usedByAgentIds: ['ma-1'],
+    usedByAgentIds: ['ma-1', 'ma-5'],
     createdAt: '2026-02-11',
+    listing: {
+      status: 'listed',
+      listedAt: '2026-02-20',
+      subscriberCount: 53,
+      pricing: { type: 'subscription', price: 6, currency: 'CNY', period: 'month' },
+      tags: ['推送', '通知', '自动化'],
+      coverDescription: '将任意内容定时推送至企微、飞书、邮件，支持多渠道并发。',
+    },
   },
   {
     id: 'ms-3',
@@ -161,7 +188,7 @@ export const mySkills: MySkill[] = [
     description: '读取日历事件，提炼本周工作与会议要点',
     source: 'built',
     isEnabled: true,
-    usedByAgentIds: ['ma-2'],
+    usedByAgentIds: ['ma-2', 'ma-5'],
     createdAt: '2026-01-20',
     listing: {
       status: 'rejected',
@@ -180,7 +207,7 @@ export const mySkills: MySkill[] = [
     description: '解析 Excel/CSV 文件，提取关键数据并生成摘要',
     source: 'built',
     isEnabled: true,
-    usedByAgentIds: ['ma-2', 'ma-3'],
+    usedByAgentIds: ['ma-2', 'ma-3', 'ma-5'],
     createdAt: '2026-01-22',
   },
   {
@@ -191,9 +218,14 @@ export const mySkills: MySkill[] = [
     description: '对指定 URL 进行全页截图，支持定时抓取',
     source: 'purchased',
     isEnabled: true,
-    usedByAgentIds: ['ma-1'],
+    usedByAgentIds: ['ma-1', 'ma-5'],
     createdAt: '2026-02-15',
     marketId: 'skill-market-screenshot',
+    purchaseInfo: {
+      pricing: { type: 'subscription', price: 9, currency: 'CNY', period: 'month' },
+      usageCount: 2,
+      renewAt: '2026-04-15',
+    },
   },
   {
     id: 'ms-6',
@@ -203,9 +235,13 @@ export const mySkills: MySkill[] = [
     description: '根据结构化数据自动生成折线图、柱状图、饼图',
     source: 'purchased',
     isEnabled: false,
-    usedByAgentIds: ['ma-3'],
+    usedByAgentIds: ['ma-3', 'ma-5'],
     createdAt: '2026-02-18',
     marketId: 'skill-market-chart',
+    purchaseInfo: {
+      pricing: { type: 'pay_per_use', price: 0.05, currency: 'CNY' },
+      usageCount: 342,
+    },
   },
   {
     id: 'ms-7',
@@ -215,9 +251,46 @@ export const mySkills: MySkill[] = [
     description: '检测 Python/TypeScript 代码中的安全漏洞与性能问题',
     source: 'purchased',
     isEnabled: true,
-    usedByAgentIds: ['ma-4'],
+    usedByAgentIds: ['ma-4', 'ma-5'],
     createdAt: '2026-02-25',
     marketId: 'skill-market-codecheck',
+    purchaseInfo: {
+      pricing: { type: 'free', currency: 'CNY' },
+      usageCount: 87,
+    },
+  },
+  {
+    id: 'ms-8',
+    name: 'PDF 解析',
+    icon: '📄',
+    category: 'file',
+    description: '提取 PDF 文件中的文字、表格与图片，支持多页面分析',
+    source: 'built',
+    isEnabled: true,
+    usedByAgentIds: ['ma-5'],
+    createdAt: '2026-02-28',
+  },
+  {
+    id: 'ms-9',
+    name: '翻译引擎',
+    icon: '🌐',
+    category: 'web',
+    description: '支持 30+ 语言的实时翻译，专业术语优化',
+    source: 'built',
+    isEnabled: true,
+    usedByAgentIds: ['ma-5'],
+    createdAt: '2026-02-28',
+  },
+  {
+    id: 'ms-10',
+    name: '邮件起草',
+    icon: '✉️',
+    category: 'integration',
+    description: '根据模版和参数自动生成专业邮件正文',
+    source: 'built',
+    isEnabled: true,
+    usedByAgentIds: ['ma-5'],
+    createdAt: '2026-03-01',
   },
 ];
 

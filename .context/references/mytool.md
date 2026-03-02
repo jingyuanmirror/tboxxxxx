@@ -1,8 +1,8 @@
 # 我的技能 — Product Requirements Document
 
-**版本**：v1.1  
+**版本**：v1.2  
 **日期**：2026-03-02  
-**状态**：草稿
+**状态**：开发中（核心功能已实现）
 
 ---
 
@@ -71,14 +71,16 @@
 
 | 字段 | 说明 |
 |------|------|
-| 头像 | emoji 或用户上传图片 |
+| 头像 | emoji 或用户上传图片；`avatarUrl` 优先，fallback 到 emoji |
 | 名称 | Agent 命名 |
 | 角色标签 | 复用 `AgentRole` 枚举（助手、分析师等） |
 | Slogan | 一句话描述 |
-| 已挂载 Skill 数 | `N 个技能` |
+| 已挂载 Skill | 最多显示 2 个 Skill 名称 chip；超出部分以 **`+N`** 纯文字小标呈现（非 chip 样式），点击展开显示全部，再次点击收起 |
 | 来源徽章 | `自建` (蓝) / `集市` (橙) |
 | 启用开关 | toggle，控制该 Agent 是否出现在对话选择器 |
-| 操作菜单（…） | 编辑 / 复制 / 删除 |
+| 底部左槽 — `listed` 状态 | 定价 pill（如「¥19/月」「按次」「免费」）+ 「N 订阅」文字；其他状态该槽位留空 |
+| 底部右槽 — 上架状态 | 见 8.4 节；`unlisted` 时展示「上架集市」按钮 |
+| 操作菜单（…） | 编辑 / 复制 / 删除；上架状态不同追加额外操作（见 8.4） |
 
 ### 4.3 Skill 卡片
 
@@ -89,9 +91,11 @@
 | 分类标签 | 网络/数据/创意/文件/集成/记忆/代码/其他 |
 | 简介 | 不超过2行的功能描述 |
 | 来源徽章 | `自建` / `集市` |
-| 被引用数 | `已挂载到 N 个 Agent` |
+| 被引用数 | `已挂载到 N 个 Agent`（仅自建且非上架状态时显示该槽位） |
 | 启用开关 | toggle，控制该 Skill 是否处于激活状态 |
-| 操作菜单（…） | 编辑 / 测试运行 / 复制 / 删除 |
+| 底部左槽 — 自建 `listed` | 定价 pill + 「N 订阅」文字（与 AgentCard 一致）|
+| 底部左槽 — 集市采购 | **`PurchasedSkillMeta`**：定价类型 pill（「¥X/月订阅」「¥X/次」「免费」）+ 使用情况（「已订阅 N 个月」/「已调用 N 次」）+ 续费日期（订阅制时展示） |
+| 操作菜单（…） | 自建：编辑 / 测试运行 / 复制 / 删除；集市采购：不展示操作菜单，底部右侧改为「退订」按钮 |
 
 ### 4.4 空状态
 
@@ -188,6 +192,7 @@ export interface ListingInfo {
   status: ListingStatus;
   submittedAt?: string;       // 最近一次提交时间（ISO）
   listedAt?: string;          // 上架时间（ISO）
+  subscriberCount?: number;   // 当前订阅/购买人数，status === 'listed' 时展示
   rejectedReason?: string;    // 拒绝原因，status === 'rejected' 时存在
   marketId?: string;          // 上架后对应的集市 id（listed 后由平台赋予）
   pricing: ListingPricing;
@@ -197,9 +202,23 @@ export interface ListingInfo {
 
 export interface ListingPricing {
   type: 'free' | 'subscription' | 'pay_per_use';
-  price?: number;             // 分为单位，type !== 'free' 时必填
+  price?: number;             // 元为单位，type !== 'free' 时必填
   currency: 'CNY';
   period?: 'month' | 'year'; // type === 'subscription' 时使用
+}
+
+/**
+ * 集市采购 Skill 的使用/订阅信息（仅 source === 'purchased' 的 Skill 适用）
+ */
+export interface SkillPurchaseInfo {
+  pricing: {
+    type: 'free' | 'subscription' | 'pay_per_use';
+    price?: number;           // 元为单位
+    currency: 'CNY';
+    period?: 'month' | 'year';
+  };
+  usageCount: number;         // 累计调用次数（订阅制也记录）
+  renewAt?: string;           // 下次续费日期（ISO），仅 subscription 时存在
 }
 
 export interface MyAgent {
@@ -232,6 +251,7 @@ export interface MySkill {
   marketId?: string;
   config?: Record<string, unknown>; // Skill 运行时配置
   listing?: ListingInfo;     // 上架信息，仅 source === 'built' 时存在
+  purchaseInfo?: SkillPurchaseInfo; // 购买/订阅信息，仅 source === 'purchased' 时存在
 }
 ```
 
@@ -371,16 +391,18 @@ interface ChatDialogProps {
 
 #### `listed`（已上架）
 ```
-底部操作区右侧：🟢「已上架」状态徽章（绿底绿字）
+底部左槽：定价 pill（「¥X/月」「¥X/次」「免费」）+ 「N 订阅」文字
+底部右槽：🟢「已上架」状态徽章（绿底绿字）；徽章内含订阅数角标（subscriberCount）
 操作菜单（…）：编辑 / 复制 / 查看集市页面 / 修改定价 / 下架 / 删除
 卡片右上角：小型「推广」入口（可选，P3）
 ```
 
 #### `rejected`（未通过）
 ```
-底部操作区右侧：🔴「未通过」状态徽章（红底红字）+ hover 展示拒绝原因 tooltip
+底部操作区右侧：🔴「未通过」状态徽章（红底红字）
+鼠标 hover 徽章：展示暗色 tooltip，内含完整拒绝原因文本
 操作菜单（…）：编辑 / 复制 / 重新提交 / 删除
-卡片底部额外展示：折叠的拒绝原因文案（可展开）
+注：tooltip 使用 React state（onMouseEnter/Leave），不依赖 CSS group-hover（Tailwind v4 兼容性问题）
 ```
 
 **徽章视觉规格：**
@@ -435,53 +457,59 @@ interface ChatDialogProps {
 
 | # | 任务 | 涉及文件 | 优先级 |
 |---|------|----------|---------|
-| T1 | 创建 `myToolsMock.ts`，编写 Mock 数据 | `src/lib/myToolsMock.ts` | P0 |
-| T2 | 创建 `MyToolsView.tsx` 主视图组件 | `src/components/workspace/MyToolsView.tsx` | P0 |
-| T3 | 左侧菜单「我的技能」点击跳转接入 | `LeftSidebar.tsx`、`CenterMain.tsx`、`page.tsx` | P0 |
-| T4 | 扩展 `ChatDialog` 支持 `mode` prop 和构建 Prompt | `ChatDialog.tsx` | P1 |
-| T5 | 新增 Agent 对话流提示词设计与调试 | `route.ts` 或 prompt 配置 | P1 |
-| T6 | 新增 Skill 对话流提示词设计与调试 | 同上 | P1 |
-| T7 | 构建完成后回调，更新 Mock 数据或状态 | `MyToolsView.tsx`、Zustand store | P1 |
-| T8 | 搜索、筛选、排序功能实现 | `MyToolsView.tsx` | P2 |
-| T9 | 启用/停用、删除交互实现 | `MyToolsView.tsx` | P2 |
-| T10 | 响应式适配（tablet / mobile） | `MyToolsView.tsx` | P2 |
-| T11 | 新增 `ListingStatus`、`ListingInfo`、`ListingPricing` 类型 | `myToolsMock.ts` | P1 |
-| T12 | AgentCard/SkillCard 底部根据 `listing.status` 渲染上架状态 UI | `MyToolsView.tsx` | P1 |
-| T13 | 实现 `ListingDialog`（两步表单：展示信息 + 定价） | `MyToolsView.tsx` 或独立组件 | P1 |
-| T14 | 上架/撤回/下架操作更新本地状态（Mock 模拟审核流转） | `MyToolsView.tsx` | P1 |
-| T15 | 「已上架」状态下「查看集市页面」链接跳转 Market 对应条目 | `MyToolsView.tsx`、`CenterMain.tsx` | P2 |
-| T16 | 「修改定价」Popover 实现 | `MyToolsView.tsx` | P2 |
-| T17 | 删除已上架资产时自动触发下架提示 | `MyToolsView.tsx` | P2 |
-| T18 | 审核结果 Toast 通知（Mock 定时器模拟） | `MyToolsView.tsx` | P3 |
+| T1 | 创建 `myToolsMock.ts`，编写 Mock 数据 | `src/lib/myToolsMock.ts` | P0 | ✅ 完成 |
+| T2 | 创建 `MyToolsView.tsx` 主视图组件 | `src/components/workspace/MyToolsView.tsx` | P0 | ✅ 完成 |
+| T3 | 左侧菜单「我的技能」点击跳转接入 | `LeftSidebar.tsx`、`CenterMain.tsx`、`page.tsx` | P0 | ✅ 完成 |
+| T4 | 扩展 `ChatDialog` 支持 `mode` prop 和构建 Prompt | `ChatDialog.tsx` | P1 | ⬜ 待开发 |
+| T5 | 新增 Agent 对话流提示词设计与调试 | `route.ts` 或 prompt 配置 | P1 | ⬜ 待开发 |
+| T6 | 新增 Skill 对话流提示词设计与调试 | 同上 | P1 | ⬜ 待开发 |
+| T7 | 构建完成后回调，更新 Mock 数据或状态 | `MyToolsView.tsx`、Zustand store | P1 | ⬜ 待开发 |
+| T8 | 搜索、筛选、排序功能实现 | `MyToolsView.tsx` | P2 | ✅ 完成（搜索 + 分类筛选已实现）|
+| T9 | 启用/停用、删除交互实现 | `MyToolsView.tsx` | P2 | ✅ 完成 |
+| T10 | 响应式适配（tablet / mobile） | `MyToolsView.tsx` | P2 | ⬜ 待开发 |
+| T11 | 新增 `ListingStatus`、`ListingInfo`、`ListingPricing`、`SkillPurchaseInfo` 类型 | `myToolsMock.ts` | P1 | ✅ 完成 |
+| T11a | 新增 `subscriberCount` 字段到 `ListingInfo`；新增 `SkillPurchaseInfo` 类型及 Mock 数据（ms-5/ms-6/ms-7） | `myToolsMock.ts` | P1 | ✅ 完成 |
+| T12 | AgentCard/SkillCard 底部根据 `listing.status` 渲染上架状态 UI | `MyToolsView.tsx` | P1 | ✅ 完成 |
+| T12a | listed 状态底部左槽展示定价 pill + 订阅数；purchased Skill 展示 `PurchasedSkillMeta` | `MyToolsView.tsx` | P1 | ✅ 完成 |
+| T13 | 实现 `ListingDialog`（两步表单：展示信息 + 定价） | `MyToolsView.tsx` 或独立组件 | P1 | ✅ 完成 |
+| T14 | 上架/撤回/下架操作更新本地状态（Mock 模拟审核流转） | `MyToolsView.tsx` | P1 | ✅ 完成 |
+| T15 | 「已上架」状态下「查看集市页面」链接跳转 Market 对应条目 | `MyToolsView.tsx`、`CenterMain.tsx` | P2 | ⬜ 待开发 |
+| T16 | 「修改定价」Popover 实现 | `MyToolsView.tsx` | P2 | ⬜ 待开发 |
+| T17 | 删除已上架资产时自动触发下架提示 | `MyToolsView.tsx` | P2 | ⬜ 待开发 |
+| T18 | 审核结果 Toast 通知（Mock 定时器模拟） | `MyToolsView.tsx` | P3 | ⬜ 待开发 |
 
 ---
 
 ## 十一、验收标准
 
 **基础功能：**
-- [ ] 点击左侧「我的技能」，中心区域切换到 `MyToolsView`
-- [ ] 主 Tab 可在「我的 Agent」和「我的 Skill」之间切换
-- [ ] 子 Tab 可在「我构建的」和「集市采购的」之间切换，内容正确过滤
-- [ ] 每个卡片正确展示来源徽章、启用状态、操作菜单
-- [ ] 空状态下展示对应文案和引导按钮
-- [ ] 点击「＋ 新增 Agent/Skill」弹出 Tbox 对话框，注入对应引导 Prompt
-- [ ] 对话框内完成构建后，新资产出现在「我构建的」子 Tab，并有高亮动效
+- [x] 点击左侧「我的技能」，中心区域切换到 `MyToolsView`
+- [x] 主 Tab 可在「我的 Agent」和「我的 Skill」之间切换
+- [x] 子 Tab 可在「我构建的」和「集市采购的」之间切换，内容正确过滤
+- [x] 每个卡片正确展示来源徽章、启用状态、操作菜单
+- [x] 空状态下展示对应文案和引导按钮
+- [x] 点击「＋ 新增 Agent/Skill」弹出 Tbox 对话框，注入对应引导 Prompt
+- [ ] 对话框内完成构建后，新资产出现在「我构建的」子 Tab，并有高亮动效（对话回调待接入）
 - [ ] 未完成构建时关闭对话框有确认提示
-- [ ] 搜索关键词可实时过滤卡片
-- [ ] 启用/停用 toggle 和删除功能正常工作
+- [x] 搜索关键词可实时过滤卡片
+- [x] 启用/停用 toggle 和删除功能正常工作
 - [ ] Desktop / mobile 布局适配均正常
 
 **上架集市功能：**
-- [ ] 自建卡片底部展示「上架集市」按钮（`unlisted` 状态）
-- [ ] 点击「上架集市」弹出 ListingDialog，两步填写展示信息和定价
-- [ ] 提交前校验：Agent 已挂载 Skill、简介不为空
-- [ ] 提交后卡片状态变为「审核中」（黄色徽章），操作菜单展示「撤回申请」
-- [ ] 点击「撤回申请」状态恢复 `unlisted`
-- [ ] Mock 模拟审核通过：状态变为「已上架」（绿色徽章），操作菜单展示「下架」「查看集市页面」
-- [ ] Mock 模拟审核未通过：状态变为「未通过」（红色徽章），可查看拒绝原因，可重新提交
-- [ ] 点击「下架」触发行内确认，确认后状态恢复 `unlisted`
-- [ ] 删除已上架资产时提示需先下架
-- [ ] 集市采购的资产不展示上架相关入口
+- [x] 自建卡片底部展示「上架集市」按钮（`unlisted` 状态）
+- [x] 点击「上架集市」弹出 ListingDialog，两步填写展示信息和定价
+- [x] 提交前校验：Agent 已挂载 Skill、简介不为空
+- [x] 提交后卡片状态变为「审核中」（黄色徽章），操作菜单展示「撤回申请」
+- [x] 点击「撤回申请」状态恢复 `unlisted`
+- [x] Mock 模拟审核通过：状态变为「已上架」（绿色徽章），操作菜单展示「下架」「查看集市页面」
+- [x] Mock 模拟审核未通过：状态变为「未通过」（红色徽章），hover 徽章展示拒绝原因 tooltip，可重新提交
+- [x] 点击「下架」触发行内确认，确认后状态恢复 `unlisted`
+- [x] 集市采购的资产不展示上架相关入口
+- [x] 已上架资产卡片底部左槽展示定价 pill + 订阅人数
+- [x] 集市采购 Skill 卡片底部展示 `PurchasedSkillMeta`（定价类型 + 使用次数 + 续费日期）
+- [ ] 删除已上架资产时提示需先下架（contextual 提示已有，强制拦截待完善）
+- [ ] 「查看集市页面」实际跳转至 Market 视图对应条目
+- [ ] 「修改定价」Popover 实现
 
 ---
 

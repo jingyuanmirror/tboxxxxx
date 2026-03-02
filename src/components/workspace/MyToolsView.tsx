@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   Search, Plus, X, MoreHorizontal, Zap, Bot,
   Trash2, Copy, Play, Pencil, ArrowRight,
@@ -20,6 +20,7 @@ import {
   type ListingStatus,
   type ListingInfo,
   type ListingPricing,
+  type SkillPurchaseInfo,
 } from '@/lib/myToolsMock';
 import {
   mockAgents, ROLE_LABELS, getLowestPrice,
@@ -451,7 +452,7 @@ function RejectedBadge({ rejectedReason }: { rejectedReason?: string }) {
   );
 }
 
-function ListingStatusBadge({ status, rejectedReason, subscriberCount }: { status: ListingStatus; rejectedReason?: string; subscriberCount?: number }) {
+function ListingStatusBadge({ status, rejectedReason }: { status: ListingStatus; rejectedReason?: string }) {
   if (status === 'pending') return (
     <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-[#fffbeb] text-[#d97706]">
       <Clock className="w-3 h-3" /> 审核中
@@ -460,9 +461,6 @@ function ListingStatusBadge({ status, rejectedReason, subscriberCount }: { statu
   if (status === 'listed') return (
     <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-[#f0fdf4] text-[#16a34a]">
       <CheckCircle2 className="w-3 h-3" /> 已上架
-      {subscriberCount !== undefined && (
-        <span className="ml-1 text-[#16a34a] opacity-70 font-normal">{subscriberCount.toLocaleString()} 订阅</span>
-      )}
     </span>
   );
   if (status === 'rejected') return (
@@ -658,8 +656,39 @@ function AgentCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [skillsExpanded, setSkillsExpanded] = useState(false);
   const [avatarErr, setAvatarErr] = useState(false);
+  const [chipCutoff, setChipCutoff] = useState<number | null>(null);
+  const phantomRowRef = useRef<HTMLDivElement>(null);
   const mounted = mySkills.filter((s) => agent.mountedSkillIds.includes(s.id));
+  // Stable string key — avoids new array reference causing effect to re-run every render
+  const mountedKey = agent.mountedSkillIds.join(',');
+
+  // Dynamically compute cutoff: show chips that fit on one row, hide the rest with "+N"
+  useLayoutEffect(() => {
+    const phantom = phantomRowRef.current;
+    if (!phantom) return;
+
+    const measure = () => {
+      const chips = Array.from(phantom.querySelectorAll<HTMLElement>('[data-chip]'));
+      if (chips.length === 0) return;
+      const firstTop = chips[0].offsetTop;
+      let cutoff: number | null = null;
+      for (let i = 1; i < chips.length; i++) {
+        if (chips[i].offsetTop > firstTop) { cutoff = i; break; }
+      }
+      setChipCutoff((prev) => (prev === cutoff ? prev : cutoff));
+    };
+
+    measure();
+
+    // Observe the phantom (always full-width = card width minus padding).
+    // Its width changes when the card resizes; its height never changes (all chips always rendered).
+    const ro = new ResizeObserver(measure);
+    ro.observe(phantom);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mountedKey]);
 
   return (
     <div
@@ -668,9 +697,54 @@ function AgentCard({
       } ${highlight ? 'ring-2 ring-[#2563eb]' : ''}`}
       style={{ minHeight: 210 }}
     >
-      {/* Top row: avatar + name/role + source badge — matches Market AgentCard */}
+      {/* Top-right corner: action button for built agents */}
+      {agent.source === 'built' && (() => {
+        const ls = agent.listing?.status;
+        if (!ls || ls === 'unlisted') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('open'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer bg-white"
+            >
+              <Store className="w-3 h-3" /> 上架集市
+            </button>
+          </div>
+        );
+        if (ls === 'pending') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('withdraw'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d97706] text-[#d97706] hover:bg-[#fffbeb] transition-colors cursor-pointer bg-white"
+            >
+              撤单
+            </button>
+          </div>
+        );
+        if (ls === 'listed') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('unlist'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer bg-white"
+            >
+              下架
+            </button>
+          </div>
+        );
+        if (ls === 'rejected') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('resubmit'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#f4845f] text-[#f4845f] hover:bg-[#fff5f2] transition-colors cursor-pointer bg-white"
+            >
+              重新提交
+            </button>
+          </div>
+        );
+        return null;
+      })()}
+
+      {/* Top row: avatar + name/role */}
       <div className="flex items-center gap-3 mb-3">
-        {/* Circular avatar: same ring+shadow treatment as Market AgentAvatar */}
         <div
           className="rounded-full overflow-hidden ring-2 ring-white shadow-md flex-shrink-0 bg-[#f5f5f7] flex items-center justify-center"
           style={{ width: 52, height: 52 }}
@@ -681,16 +755,8 @@ function AgentCard({
             <span style={{ fontSize: 24, lineHeight: 1 }}>{agent.avatar}</span>
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="text-[15px] font-bold text-[#1a1a1a] leading-tight truncate">{agent.name}</h3>
-            {/* Source badge inline with name — mirrors Market's 精选 badge position */}
-            <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              agent.source === 'built' ? 'bg-[#eff6ff] text-[#2563eb]' : 'bg-[#fff7ed] text-[#ea580c]'
-            }`}>
-              {agent.source === 'built' ? '自建' : '集市'}
-            </span>
-          </div>
+        <div className={`min-w-0 flex-1 ${agent.source === 'built' ? 'pr-[92px]' : ''}`}>
+          <h3 className="text-[15px] font-bold text-[#1a1a1a] leading-tight truncate">{agent.name}</h3>
           <p className="text-[12px] text-[#9a9a9a] mt-0.5">{ROLE_LABELS_ZH[agent.role]}</p>
         </div>
       </div>
@@ -701,40 +767,76 @@ function AgentCard({
       </div>
 
       {/* Skills chips row */}
-      {mounted.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {mounted.slice(0, 3).map((s) => (
-            <span key={s.id} className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6a6e73]">
+      <div className="relative mb-3 min-h-[22px]">
+        {/* Phantom: always renders ALL chips so measurement is always accurate.
+            Absolutely positioned so it never affects card height. */}
+        <div
+          ref={phantomRowRef}
+          className="flex flex-wrap items-center gap-1.5 pointer-events-none select-none"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, visibility: 'hidden' }}
+          aria-hidden="true"
+        >
+          {mounted.map((s) => (
+            <span key={s.id} data-chip="true" className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6a6e73] flex-shrink-0">
               {s.name}
             </span>
           ))}
-          {mounted.length > 3 && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#8e8e93]">+{mounted.length - 3}</span>
+        </div>
+
+        {/* Visible row: sliced chips + overflow toggle */}
+        <div className="flex flex-wrap items-center gap-1.5 min-h-[22px]">
+          {mounted.length === 0 ? (
+            <span className="text-[11px] text-[#c0c0c8] italic">暂未挂载技能</span>
+          ) : (
+            <>
+              {(skillsExpanded ? mounted : chipCutoff !== null ? mounted.slice(0, chipCutoff) : mounted).map((s) => (
+                <span key={s.id} className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6a6e73] flex-shrink-0">
+                  {s.name}
+                </span>
+              ))}
+              {!skillsExpanded && chipCutoff !== null && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSkillsExpanded(true); }}
+                  className="text-[11px] text-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer leading-none flex-shrink-0"
+                >
+                  +{mounted.length - chipCutoff}
+                </button>
+              )}
+              {skillsExpanded && chipCutoff !== null && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSkillsExpanded(false); }}
+                  className="text-[11px] text-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer leading-none flex-shrink-0"
+                >
+                  收起
+                </button>
+              )}
+            </>
           )}
         </div>
-      )}
+      </div>
 
       {/* Footer row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <span className="flex items-center gap-1 text-[11.5px] text-[#9a9a9a]">
-            <Zap className="w-3 h-3" />
-            <span>{mounted.length} 个技能</span>
-          </span>
+          {agent.listing?.status === 'listed' ? (
+            <div className="flex items-center gap-2 text-[11px]">
+              <span className="font-semibold text-[#1d1d1f] bg-[#f5f5f7] px-2 py-0.5 rounded-lg">
+                {agent.listing.pricing.type === 'free' ? '免费'
+                  : agent.listing.pricing.type === 'subscription' ? `¥${agent.listing.pricing.price}/${agent.listing.pricing.period === 'year' ? '年' : '月'}`
+                  : `¥${agent.listing.pricing.price}/次`}
+              </span>
+              <span className="text-[#9a9a9a]">{(agent.listing.subscriberCount ?? 0).toLocaleString()} 订阅</span>
+            </div>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
-          {/* Listing status badge or button (built agents only) */}
-          {(() => {
+          {/* Status badge for built agents */}
+          {agent.source === 'built' && (() => {
             const ls = agent.listing?.status;
-            if (!ls || ls === 'unlisted') return (
-              <button
-                onClick={(e) => { e.stopPropagation(); onListingAction('open'); }}
-                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer"
-              >
-                <Store className="w-3 h-3" /> 上架集市
-              </button>
-            );
-            return <ListingStatusBadge status={ls} rejectedReason={agent.listing?.rejectedReason} subscriberCount={agent.listing?.subscriberCount} />;
+            if (ls === 'pending') return <ListingStatusBadge status="pending" />;
+            if (ls === 'listed') return <ListingStatusBadge status="listed" />;
+            if (ls === 'rejected') return <ListingStatusBadge status="rejected" rejectedReason={agent.listing?.rejectedReason} />;
+            return null;
           })()}
           {/* More menu */}
           <div className="relative">
@@ -755,29 +857,13 @@ function AgentCard({
                 <button className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer">
                   <Copy className="w-3.5 h-3.5" /> 复制
                 </button>
-                {agent.listing?.status === 'pending' && (
-                  <button
-                    onClick={() => { setMenuOpen(false); onListingAction('withdraw'); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#d97706] hover:bg-[#fffbeb] cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" /> 撤回申请
-                  </button>
-                )}
                 {agent.listing?.status === 'listed' && (
-                  <>
-                    <button
-                      onClick={() => { setMenuOpen(false); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> 查看集市
-                    </button>
-                    <button
-                      onClick={() => { setMenuOpen(false); onListingAction('unlist'); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer"
-                    >
-                      <Store className="w-3.5 h-3.5" /> 下架
-                    </button>
-                  </>
+                  <button
+                    onClick={() => { setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> 查看集市
+                  </button>
                 )}
                 {agent.listing?.status === 'rejected' && (
                   <button
@@ -818,6 +904,26 @@ function AgentCard({
   );
 }
 
+// ─── Purchased Skill Meta (pricing + usage) ──────────────────────────────
+function PurchasedSkillMeta({ purchaseInfo }: { purchaseInfo: SkillPurchaseInfo }) {
+  const { pricing, usageCount, renewAt } = purchaseInfo;
+  const priceLabel =
+    pricing.type === 'free' ? '免费'
+    : pricing.type === 'subscription' ? `¥${pricing.price}/${pricing.period === 'year' ? '年' : '月'}`
+    : `¥${pricing.price}/次`;
+  const usageLabel =
+    pricing.type === 'subscription'
+      ? `已订阅 ${usageCount} 个月`
+      : `已调用 ${usageCount.toLocaleString()} 次`;
+  const renewLabel = renewAt ? ` · 续费 ${renewAt.slice(5).replace('-', '月')}日` : '';
+  return (
+    <div className="flex items-center gap-2 text-[11px]">
+      <span className="font-semibold text-[#1d1d1f] bg-[#f5f5f7] px-2 py-0.5 rounded-lg">{priceLabel}</span>
+      <span className="text-[#8e8e93]">{usageLabel}{renewLabel}</span>
+    </div>
+  );
+}
+
 // ─── Skill Card ──────────────────────────────────────────────
 // Layout mirrors the Market 装备铺 SkillCard exactly
 function SkillCard({
@@ -842,11 +948,57 @@ function SkillCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-[#ebebeb] p-5 transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 relative overflow-hidden group ${
+      className={`bg-white rounded-2xl border border-[#ebebeb] p-5 transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 relative group ${
         !skill.isEnabled ? 'opacity-50' : ''
       } ${highlight ? 'ring-2 ring-[#2563eb]' : ''}`}
     >
-      {/* Top row: icon + name/category + source badge — mirrors Market top row */}
+      {/* Top-right corner: action button for built skills */}
+      {skill.source === 'built' && (() => {
+        const ls = skill.listing?.status;
+        if (!ls || ls === 'unlisted') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('open'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer bg-white"
+            >
+              <Store className="w-3 h-3" /> 上架集市
+            </button>
+          </div>
+        );
+        if (ls === 'pending') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('withdraw'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d97706] text-[#d97706] hover:bg-[#fffbeb] transition-colors cursor-pointer bg-white"
+            >
+              撤单
+            </button>
+          </div>
+        );
+        if (ls === 'listed') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('unlist'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer bg-white"
+            >
+              下架
+            </button>
+          </div>
+        );
+        if (ls === 'rejected') return (
+          <div className="absolute top-[30px] right-4 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onListingAction('resubmit'); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#f4845f] text-[#f4845f] hover:bg-[#fff5f2] transition-colors cursor-pointer bg-white"
+            >
+              重新提交
+            </button>
+          </div>
+        );
+        return null;
+      })()}
+
+      {/* Top row: icon + name/category */}
       <div className="flex items-center gap-3 mb-3">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -854,16 +1006,10 @@ function SkillCard({
         >
           <Icon className="w-5 h-5" style={{ color: badge.text }} />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className={`min-w-0 flex-1 ${skill.source === 'built' ? 'pr-[92px]' : ''}`}>
           <div className="font-semibold text-[14px] text-[#1d1d1f] truncate">{skill.name}</div>
           <div className="text-[11px] text-[#8e8e93] mt-0.5">{CATEGORY_LABELS_ZH[skill.category]}</div>
         </div>
-        {/* Source badge — replacing the mount button slot */}
-        <span className={`flex-shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-xl ${
-          skill.source === 'built' ? 'bg-[#eff6ff] text-[#2563eb]' : 'bg-[#fff7ed] text-[#ea580c]'
-        }`}>
-          {skill.source === 'built' ? '自建' : '集市'}
-        </span>
       </div>
 
       {/* Description — same as Market shortDesc */}
@@ -872,33 +1018,41 @@ function SkillCard({
       {/* Footer — mirrors Market skill footer with border-t */}
       <div className="flex items-center justify-between pt-3 border-t border-[#f2f4f6]">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[12px] text-[#8e8e93]">
-            <Users className="w-3 h-3" /> {agentCount} 个 Agent
-          </span>
+          {skill.source === 'purchased' && skill.purchaseInfo != null ? (
+            <PurchasedSkillMeta purchaseInfo={skill.purchaseInfo} />
+          ) : skill.source === 'built' && skill.listing?.status === 'listed' ? (
+            <div className="flex items-center gap-2 text-[11px]">
+              <span className="font-semibold text-[#1d1d1f] bg-[#f5f5f7] px-2 py-0.5 rounded-lg">
+                {skill.listing.pricing.type === 'free' ? '免费'
+                  : skill.listing.pricing.type === 'subscription' ? `¥${skill.listing.pricing.price}/${skill.listing.pricing.period === 'year' ? '年' : '月'}`
+                  : `¥${skill.listing.pricing.price}/次`}
+              </span>
+              <span className="text-[#8e8e93]">{(skill.listing.subscriberCount ?? 0).toLocaleString()} 订阅</span>
+            </div>
+          ) : (
+            <span className="flex items-center gap-1 text-[12px] text-[#8e8e93]">
+              <Users className="w-3 h-3" /> {agentCount} 个 Agent
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Purchased: 退订 button; Built: listing status/button */}
-          {skill.source === 'purchased' ? (
+          {/* Purchased: 退订 button */}
+          {skill.source === 'purchased' && (
             <button
               onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
               className="px-3 py-1 text-[11.5px] font-semibold rounded-lg border border-[#fca5a5] text-[#dc2626] hover:bg-[#fef2f2] transition-colors cursor-pointer"
             >
               退订
             </button>
-          ) : (
-            (() => {
-              const ls = skill.listing?.status;
-              if (!ls || ls === 'unlisted') return (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onListingAction('open'); }}
-                  className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer"
-                >
-                  <Store className="w-3 h-3" /> 上架集市
-                </button>
-              );
-              return <ListingStatusBadge status={ls} rejectedReason={skill.listing?.rejectedReason} subscriberCount={skill.listing?.subscriberCount} />;
-            })()
           )}
+          {/* Status badge for built skills */}
+          {skill.source === 'built' && (() => {
+            const ls = skill.listing?.status;
+            if (ls === 'pending') return <ListingStatusBadge status="pending" />;
+            if (ls === 'listed') return <ListingStatusBadge status="listed" />;
+            if (ls === 'rejected') return <ListingStatusBadge status="rejected" rejectedReason={skill.listing?.rejectedReason} />;
+            return null;
+          })()}
           {/* More menu */}
           <div className="relative">
             <button
@@ -921,29 +1075,13 @@ function SkillCard({
                 <button className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer">
                   <Copy className="w-3.5 h-3.5" /> 复制
                 </button>
-                {skill.source === 'built' && skill.listing?.status === 'pending' && (
-                  <button
-                    onClick={() => { setMenuOpen(false); onListingAction('withdraw'); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#d97706] hover:bg-[#fffbeb] cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" /> 撤回申请
-                  </button>
-                )}
                 {skill.source === 'built' && skill.listing?.status === 'listed' && (
-                  <>
-                    <button
-                      onClick={() => { setMenuOpen(false); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> 查看集市
-                    </button>
-                    <button
-                      onClick={() => { setMenuOpen(false); onListingAction('unlist'); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer"
-                    >
-                      <Store className="w-3.5 h-3.5" /> 下架
-                    </button>
-                  </>
+                  <button
+                    onClick={() => { setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#333] hover:bg-[#f5f5f7] cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> 查看集市
+                  </button>
                 )}
                 {skill.source === 'built' && skill.listing?.status === 'rejected' && (
                   <button
