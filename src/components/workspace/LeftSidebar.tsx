@@ -11,7 +11,7 @@ interface ChatHistoryItem {
 interface LeftSidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market', tab?: 'agents'|'skills'|'tasks') => void;
+  onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market'|'mytools', tab?: 'agents'|'skills'|'tasks') => void;
   chatHistory?: ChatHistoryItem[];
   onOpenChat?: (message: string) => void;
   appMode?: 'normal' | 'beginner';
@@ -93,6 +93,7 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
           <div className="nav-item" onClick={() => onOpenView && onOpenView('knowledge')}>最近上传</div>
           <div className="nav-item">我的作品</div>
           <div className="nav-item">我的模版</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('mytools')}>我的技能</div>
         </div>
 
         {/* 锦囊集市 */}

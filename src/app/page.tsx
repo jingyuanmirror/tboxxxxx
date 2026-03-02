@@ -9,7 +9,7 @@ import RightSidebar from '@/components/workspace/RightSidebar';
 export default function Home() {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarVisible, setIsRightSidebarVisible] = useState(true);
-  const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'>('home');
+  const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'|'mytools'>('home');
   const [marketInitialTab, setMarketInitialTab] = useState<'agents'|'skills'|'tasks'|undefined>(undefined);
   const [appMode, setAppMode] = useState<'normal' | 'beginner'>('normal');
 
@@ -29,7 +29,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f6]">
-      {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && (
+      {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && (
         <Header 
           onToggleRightSidebar={() => setIsRightSidebarVisible(!isRightSidebarVisible)}
           isRightSidebarVisible={isRightSidebarVisible}
@@ -37,7 +37,7 @@ export default function Home() {
         />
       )}
       
-      <div className={`flex flex-1 ${isChatOpen || activeView === 'knowledge' || activeView === 'market' ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
+      <div className={`flex flex-1 ${isChatOpen || activeView === 'knowledge' || activeView === 'market' || activeView === 'mytools' ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
         <LeftSidebar 
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
@@ -49,7 +49,7 @@ export default function Home() {
             // ensure initial tab is set before switching view so MarketView mounts with correct tab
             if (v === 'market' && tab) setMarketInitialTab(tab);
             else setMarketInitialTab(undefined);
-            setActiveView(v as 'home'|'knowledge'|'scheduled'|'market');
+            setActiveView(v as 'home'|'knowledge'|'scheduled'|'market'|'mytools');
           }}
         />
 
@@ -74,7 +74,7 @@ export default function Home() {
           }}
         />
         
-        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && appMode !== 'beginner' && <RightSidebar isVisible={isRightSidebarVisible} />}
+        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && appMode !== 'beginner' && <RightSidebar isVisible={isRightSidebarVisible} />}
       </div>
     </div>
   );
