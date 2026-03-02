@@ -956,7 +956,7 @@ function SkillCard({
       {skill.source === 'built' && (() => {
         const ls = skill.listing?.status;
         if (!ls || ls === 'unlisted') return (
-          <div className="absolute top-[30px] right-4 z-10">
+          <div className="absolute top-[20px] right-4 z-10">
             <button
               onClick={(e) => { e.stopPropagation(); onListingAction('open'); }}
               className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer bg-white"
@@ -966,7 +966,7 @@ function SkillCard({
           </div>
         );
         if (ls === 'pending') return (
-          <div className="absolute top-[30px] right-4 z-10">
+          <div className="absolute top-[20px] right-4 z-10">
             <button
               onClick={(e) => { e.stopPropagation(); onListingAction('withdraw'); }}
               className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d97706] text-[#d97706] hover:bg-[#fffbeb] transition-colors cursor-pointer bg-white"
@@ -976,7 +976,7 @@ function SkillCard({
           </div>
         );
         if (ls === 'listed') return (
-          <div className="absolute top-[30px] right-4 z-10">
+          <div className="absolute top-[20px] right-4 z-10">
             <button
               onClick={(e) => { e.stopPropagation(); onListingAction('unlist'); }}
               className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#d0d0d8] text-[#6a6e73] hover:border-[#a0a0a8] hover:text-[#1a1a1a] transition-colors cursor-pointer bg-white"
@@ -986,7 +986,7 @@ function SkillCard({
           </div>
         );
         if (ls === 'rejected') return (
-          <div className="absolute top-[30px] right-4 z-10">
+          <div className="absolute top-[20px] right-4 z-10">
             <button
               onClick={(e) => { e.stopPropagation(); onListingAction('resubmit'); }}
               className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[#f4845f] text-[#f4845f] hover:bg-[#fff5f2] transition-colors cursor-pointer bg-white"
@@ -998,14 +998,8 @@ function SkillCard({
         return null;
       })()}
 
-      {/* Top row: icon + name/category */}
-      <div className="flex items-center gap-3 mb-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: badge.bg }}
-        >
-          <Icon className="w-5 h-5" style={{ color: badge.text }} />
-        </div>
+      {/* Top row: name/category (no logo) */}
+      <div className="flex items-center mb-3">
         <div className={`min-w-0 flex-1 ${skill.source === 'built' ? 'pr-[92px]' : ''}`}>
           <div className="font-semibold text-[14px] text-[#1d1d1f] truncate">{skill.name}</div>
           <div className="text-[11px] text-[#8e8e93] mt-0.5">{CATEGORY_LABELS_ZH[skill.category]}</div>

@@ -131,6 +131,7 @@ export const myAgents: MyAgent[] = [
     id: 'ma-5',
     name: '全能工作流助手',
     avatar: '🤖',
+    avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
     role: 'assistant',
     slogan: '集搜索、分析、可视化、推送、存储于一身的超级工作流维小助手',
     mountedSkillIds: ['ms-1', 'ms-2', 'ms-3', 'ms-4', 'ms-5', 'ms-6', 'ms-7', 'ms-8', 'ms-9', 'ms-10'],
