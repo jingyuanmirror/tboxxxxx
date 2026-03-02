@@ -130,8 +130,8 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
   const handleSend = (msg: string) => {
     if (!msg.trim()) return;
     markTaskStarted();
+    markTaskDone(selectedScenario?.id ?? 'chat');
     onOpenChat(msg);
-    setTimeout(() => markTaskDone(selectedScenario?.id ?? 'chat'), 1000);
   };
 
   const showIntroCard = stage === 'new_user' && !introSkipped;
@@ -183,8 +183,8 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
           lastCompletedTask={completedTaskTypes[completedTaskTypes.length - 1]}
           onSelect={(prompt) => {
             markTaskStarted();
+            markTaskDone('recommendation');
             onOpenChat(prompt);
-            setTimeout(() => markTaskDone('recommendation'), 1000);
           }}
         />
       )}

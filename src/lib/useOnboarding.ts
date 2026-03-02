@@ -76,27 +76,23 @@ export function useOnboarding() {
   }, [update]);
 
   const markTaskStarted = useCallback(() => {
-    setState(prev => {
-      if (prev.stage === 'new_user' || prev.stage === 'introduced') {
-        const next = { ...prev, stage: 'first_task_started' as OnboardingStage };
-        saveState(next);
-        return next;
-      }
-      return prev;
-    });
+    const current = _sessionCache ?? defaultState();
+    if (current.stage === 'new_user' || current.stage === 'introduced') {
+      const next = { ...current, stage: 'first_task_started' as OnboardingStage };
+      saveState(next);
+      setState(next);
+    }
   }, []);
 
   const markTaskDone = useCallback((taskType: string) => {
-    setState(prev => {
-      const types = prev.completedTaskTypes.includes(taskType)
-        ? prev.completedTaskTypes
-        : [...prev.completedTaskTypes, taskType];
-      const stage: OnboardingStage =
-        types.length >= 3 ? 'growing' : 'first_task_done';
-      const next = { ...prev, completedTaskTypes: types, stage };
-      saveState(next);
-      return next;
-    });
+    const current = _sessionCache ?? defaultState();
+    const types = current.completedTaskTypes.includes(taskType)
+      ? current.completedTaskTypes
+      : [...current.completedTaskTypes, taskType];
+    const stage: OnboardingStage = types.length >= 3 ? 'growing' : 'first_task_done';
+    const next = { ...current, completedTaskTypes: types, stage };
+    saveState(next);
+    setState(next);
   }, []);
 
   const markDiscoveryVisited = useCallback((id: string) => {
