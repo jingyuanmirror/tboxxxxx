@@ -9,8 +9,9 @@ import RightSidebar from '@/components/workspace/RightSidebar';
 export default function Home() {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarVisible, setIsRightSidebarVisible] = useState(true);
-  const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'|'mytools'>('home');
+  const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'|'mytools'|'topicSpace'>('home');
   const [marketInitialTab, setMarketInitialTab] = useState<'agents'|'skills'|'tasks'|undefined>(undefined);
+  const [activeSpaceId, setActiveSpaceId] = useState<string | undefined>(undefined);
   const [appMode, setAppMode] = useState<'normal' | 'beginner'>('normal');
 
   // Chat state lifted here so Header & RightSidebar can be hidden
@@ -29,7 +30,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f6]">
-      {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && (
+      {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && activeView !== 'topicSpace' && (
         <Header 
           onToggleRightSidebar={() => setIsRightSidebarVisible(!isRightSidebarVisible)}
           isRightSidebarVisible={isRightSidebarVisible}
@@ -37,25 +38,27 @@ export default function Home() {
         />
       )}
       
-      <div className={`flex flex-1 ${isChatOpen || activeView === 'knowledge' || activeView === 'market' || activeView === 'mytools' ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
+      <div className={`flex flex-1 ${isChatOpen || activeView === 'knowledge' || activeView === 'market' || activeView === 'mytools' || activeView === 'topicSpace' ? 'h-screen' : 'h-[calc(100vh-70px)]'} max-w-[1750px] mx-auto w-full overflow-hidden`}>
         <LeftSidebar 
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
           appMode={appMode}
           onToggleMode={() => setAppMode(m => m === 'normal' ? 'beginner' : 'normal')}
-          onOpenView={(v, tab) => {
+          onOpenView={(v, tab, spaceId) => {
             // Close chat when navigating via sidebar
             if (isChatOpen) handleCloseChat();
             // ensure initial tab is set before switching view so MarketView mounts with correct tab
             if (v === 'market' && tab) setMarketInitialTab(tab);
             else setMarketInitialTab(undefined);
-            setActiveView(v as 'home'|'knowledge'|'scheduled'|'market'|'mytools');
+            if (v === 'topicSpace' && spaceId) setActiveSpaceId(spaceId);
+            setActiveView(v as 'home'|'knowledge'|'scheduled'|'market'|'mytools'|'topicSpace');
           }}
         />
 
         <CenterMain
           isLeftSidebarCollapsed={isLeftSidebarCollapsed}
           activeView={activeView}
+          activeSpaceId={activeSpaceId}
           marketInitialTab={marketInitialTab}
           appMode={appMode}
           onCloseScheduledTasks={() => setActiveView('home')}
@@ -74,7 +77,7 @@ export default function Home() {
           }}
         />
         
-        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && appMode !== 'beginner' && <RightSidebar isVisible={isRightSidebarVisible} />}
+        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && activeView !== 'topicSpace' && appMode !== 'beginner' && <RightSidebar isVisible={isRightSidebarVisible} />}
       </div>
     </div>
   );

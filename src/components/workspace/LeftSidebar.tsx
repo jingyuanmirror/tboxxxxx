@@ -11,14 +11,15 @@ interface ChatHistoryItem {
 interface LeftSidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market'|'mytools', tab?: 'agents'|'skills'|'tasks') => void;
+  onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market'|'mytools'|'topicSpace', tab?: 'agents'|'skills'|'tasks', spaceId?: string) => void;
   chatHistory?: ChatHistoryItem[];
   onOpenChat?: (message: string) => void;
   appMode?: 'normal' | 'beginner';
   onToggleMode?: () => void;
+  tboxSkillCount?: number;
 }
 
-export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView, chatHistory = [], onOpenChat, appMode = 'normal', onToggleMode }: LeftSidebarProps) {
+export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView, chatHistory = [], onOpenChat, appMode = 'normal', onToggleMode, tboxSkillCount = 0 }: LeftSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
@@ -78,10 +79,11 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
         <div className="mb-[30px]">
           <div className="flex justify-between items-center mb-2 px-[15px] whitespace-nowrap">
             <div className="text-[12.5px] tracking-[0.5px] text-[#8e8e93] font-semibold cursor-default">话题空间</div>
+            <div className="text-sm text-[#a1a1a6] cursor-pointer w-5 h-5 flex items-center justify-center rounded transition-all hover:bg-[rgba(0,0,0,0.1)] hover:text-black" title="新建空间">＋</div>
           </div>
-          <div className="nav-item">Q4 产品推广方案</div>
-          <div className="nav-item">芯片市场竞品分析</div>
-          <div className="nav-item">销售团队 Q3 复盘</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('topicSpace', undefined, 'space-1')}>Q4 产品推广方案</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('topicSpace', undefined, 'space-2')}>芯片市场竞品分析</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('topicSpace', undefined, 'space-3')}>销售团队 Q3 复盘</div>
         </div>
 
         {/* 档案库 */}
@@ -93,7 +95,12 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
           <div className="nav-item" onClick={() => onOpenView && onOpenView('knowledge')}>最近上传</div>
           <div className="nav-item">我的作品</div>
           <div className="nav-item">我的模版</div>
-          <div className="nav-item" onClick={() => onOpenView && onOpenView('mytools')}>我的技能</div>
+          <div className="nav-item" onClick={() => onOpenView && onOpenView('mytools')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>我的技能</span>
+            {tboxSkillCount > 0 && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 16, height: 16, padding: '0 4px', borderRadius: 8, background: '#f4845f', color: 'white', fontSize: 9, fontWeight: 700, lineHeight: 1 }}>{tboxSkillCount}</span>
+            )}
+          </div>
         </div>
 
         {/* 锦囊集市 */}

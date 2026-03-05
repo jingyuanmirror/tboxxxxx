@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import MagicInput from './MagicInput';
 import ChatDialog from './ChatDialog';
 import BeginnerHome from './BeginnerHome';
+import TopicSpaceView from './TopicSpaceView';
 import { Check, ChevronDown, MessageSquare, Send, X } from 'lucide-react';
 
 const ScheduledTasksClient = dynamic(() => import('./ScheduledTasks'), { ssr: false });
@@ -28,7 +29,8 @@ const initialItems: ConfirmItem[] = [
 
 interface CenterMainProps {
   isLeftSidebarCollapsed: boolean;
-  activeView?: 'home' | 'knowledge' | 'scheduled' | 'market' | 'mytools';
+  activeView?: 'home' | 'knowledge' | 'scheduled' | 'market' | 'mytools' | 'topicSpace';
+  activeSpaceId?: string;
   marketInitialTab?: 'agents' | 'skills' | 'tasks';
   onCloseScheduledTasks?: () => void;
   isChatOpen?: boolean;
@@ -36,11 +38,11 @@ interface CenterMainProps {
   onOpenChat?: (message: string) => void;
   onCloseChat?: () => void;
   onOpenMarket?: (tab: 'agents' | 'skills') => void;
-  onNavigateTo?: (view: 'home' | 'knowledge' | 'scheduled' | 'market' | 'mytools', tab?: 'agents' | 'skills' | 'tasks') => void;
+  onNavigateTo?: (view: 'home' | 'knowledge' | 'scheduled' | 'market' | 'mytools' | 'topicSpace', tab?: 'agents' | 'skills' | 'tasks') => void;
   appMode?: 'normal' | 'beginner';
 }
 
-export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat, onOpenMarket, onNavigateTo, appMode = 'normal' }: CenterMainProps) {
+export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', activeSpaceId, marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat, onOpenMarket, onNavigateTo, appMode = 'normal' }: CenterMainProps) {
 
   const [items, setItems] = useState<ConfirmItem[]>(initialItems);
   const [replyingId, setReplyingId] = useState<number | null>(null);
@@ -85,6 +87,18 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
   const handleMagicInputSend = (message: string) => {
     onOpenChat?.(message);
   };
+
+  // If topic space is open, render it full-width
+  if (activeView === 'topicSpace' && activeSpaceId) {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopicSpaceView
+          spaceId={activeSpaceId}
+          onBack={() => onNavigateTo?.('home')}
+        />
+      </div>
+    );
+  }
 
   // If chat is open, render the full-page Gemini-style chat view
   if (isChatOpen) {
