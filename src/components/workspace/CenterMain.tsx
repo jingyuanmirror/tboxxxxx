@@ -39,7 +39,7 @@ interface CenterMainProps {
   onCloseChat?: () => void;
   onOpenMarket?: (tab: 'agents' | 'skills') => void;
   onNavigateTo?: (view: 'home' | 'knowledge' | 'scheduled' | 'market' | 'mytools' | 'topicSpace', tab?: 'agents' | 'skills' | 'tasks') => void;
-  appMode?: 'normal' | 'beginner';
+  appMode?: 'normal' | 'beginner' | 'openclaw';
 }
 
 export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', activeSpaceId, marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat, onOpenMarket, onNavigateTo, appMode = 'normal' }: CenterMainProps) {
@@ -160,10 +160,11 @@ export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home'
               <ScheduledTasksClient />
             </React.Suspense>
           </div>
-        ) : appMode === 'beginner' ? (
+        ) : appMode === 'beginner' || appMode === 'openclaw' ? (
           <BeginnerHome
             onOpenChat={onOpenChat ?? (() => {})}
             onOpenView={onNavigateTo}
+            appMode={appMode}
           />
         ) : (
           <>

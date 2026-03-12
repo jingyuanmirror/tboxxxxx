@@ -205,9 +205,10 @@ interface Props {
   showIntroHeader?: boolean;
   /** When provided, show a "认识一下" collapsed card at the top of the grid */
   introCard?: IntroCardProps;
+  appMode?: 'normal' | 'beginner' | 'openclaw';
 }
 
-export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], showIntroHeader = false, introCard }: Props) {
+export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], showIntroHeader = false, introCard, appMode = 'beginner' }: Props) {
   // Reorder: priority ids first, then the rest
   const ordered = priorityIds.length > 0
     ? [
@@ -215,6 +216,38 @@ export default function TaskLauncher({ selectedId, onSelect, priorityIds = [], s
         ...TASK_SCENARIOS.filter(s => !priorityIds.includes(s.id)),
       ]
     : TASK_SCENARIOS;
+
+  // Open Claw mode: show only a single full-width intro card
+  if (appMode === 'openclaw') {
+    if (!introCard) return null;
+    return (
+      <div className="w-full mb-4">
+        <button
+          onClick={introCard.onToggle}
+          className={`
+            w-full flex items-center gap-4 px-5 py-4 rounded-2xl border text-left
+            transition-all duration-200 cursor-pointer active:scale-[0.99]
+            ${introCard.expanded
+              ? 'bg-[rgba(37,99,235,0.07)] border-[rgba(37,99,235,0.4)] shadow-[0_0_0_1px_rgba(37,99,235,0.2)]'
+              : 'bg-[rgba(255,255,255,0.9)] border-dashed border-[rgba(37,99,235,0.3)] hover:border-[rgba(37,99,235,0.5)] hover:bg-white'
+            }
+          `}
+          style={{ boxShadow: introCard.expanded ? undefined : '0 2px 12px rgba(0,0,0,0.05)' }}
+        >
+          <span className="text-2xl flex-shrink-0">👋</span>
+          <div className="flex flex-col">
+            <span className={`text-[15px] font-semibold leading-tight mb-0.5 ${introCard.expanded ? 'text-[#2563eb]' : 'text-[#1d1d1f]'}`}>
+              先让我认识一下你
+            </span>
+            <span className="text-[12px] text-[#86868b] leading-snug">填写后我能更好地帮到你，只需要一分钟</span>
+          </div>
+          <span className={`ml-auto text-[12px] font-medium flex-shrink-0 ${introCard.expanded ? 'text-[#2563eb]' : 'text-[#86868b]'}`}>
+            {introCard.expanded ? '收起 ↑' : '开始 →'}
+          </span>
+        </button>
+      </div>
+    );
+  }
 
   // When introCard is present we have 6 slots total (introCard + 5 scenarios).
   // Always keep 'chat' (随便聊聊) as the last scenario card.

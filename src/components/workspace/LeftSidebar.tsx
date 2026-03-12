@@ -14,7 +14,7 @@ interface LeftSidebarProps {
   onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market'|'mytools'|'topicSpace', tab?: 'agents'|'skills'|'tasks', spaceId?: string) => void;
   chatHistory?: ChatHistoryItem[];
   onOpenChat?: (message: string) => void;
-  appMode?: 'normal' | 'beginner';
+  appMode?: 'normal' | 'beginner' | 'openclaw';
   onToggleMode?: () => void;
   tboxSkillCount?: number;
 }
@@ -171,25 +171,40 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
 
       {/* User Settings Area */}
       <div className={`flex-shrink-0 border-t border-[rgba(0,0,0,0.06)] pt-2.5 relative z-10 ${isCollapsed ? 'px-2.5' : 'px-2.5'}`}>
-        {/* Mode Toggle Button */}
+        {/* Mode Toggle Button — cycles: normal → beginner → openclaw → normal */}
         <button
           onClick={onToggleMode}
-          title={appMode === 'normal' ? '切换到新手模式' : '切换到专家模式'}
+          title={
+            appMode === 'normal' ? '切换到新手模式' :
+            appMode === 'beginner' ? '切换到 Open Claw 模式' :
+            '切换到专家模式'
+          }
           className={`w-full mb-1 px-[15px] py-2 cursor-pointer text-[13px] rounded-lg transition-all flex items-center gap-2.5 font-medium
-            ${appMode === 'beginner'
-              ? 'bg-[rgba(59,130,246,0.1)] text-[#2563eb] hover:bg-[rgba(59,130,246,0.18)]'
-              : 'text-[#6a6e73] hover:bg-[rgba(0,0,0,0.04)] hover:text-[#1d1d1f]'
+            ${
+              appMode === 'beginner'
+                ? 'bg-[rgba(59,130,246,0.1)] text-[#2563eb] hover:bg-[rgba(59,130,246,0.18)]'
+                : appMode === 'openclaw'
+                ? 'bg-[rgba(234,88,12,0.1)] text-[#ea580c] hover:bg-[rgba(234,88,12,0.18)]'
+                : 'text-[#6a6e73] hover:bg-[rgba(0,0,0,0.04)] hover:text-[#1d1d1f]'
             }
             ${isCollapsed ? 'justify-center px-2.5' : ''}
           `}
         >
           {appMode === 'beginner' ? (
-            // Sparkle / beginner icon
+            // Star icon for beginner
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
               <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
             </svg>
+          ) : appMode === 'openclaw' ? (
+            // Claw / paw icon
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+              <path d="M9 10.5C9 9.12 7.88 8 6.5 8S4 9.12 4 10.5c0 1.2.8 2.2 1.9 2.45L5 17h3l-.5-4.5A2.5 2.5 0 0 0 9 10.5z" />
+              <path d="M14.5 8C13.12 8 12 9.12 12 10.5a2.5 2.5 0 0 0 1.5 2.28L13 17h3l-.9-4.05A2.5 2.5 0 0 0 17 10.5C17 9.12 15.88 8 14.5 8z" />
+              <path d="M7 7c0-1.1.9-2 2-2s2 .9 2 2" />
+              <path d="M13 7c0-1.1.9-2 2-2s2 .9 2 2" />
+            </svg>
           ) : (
-            // Layers icon for normal mode
+            // Layers icon for normal/expert
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
               <polygon points="12 2 2 7 12 12 22 7 12 2" />
               <polyline points="2 17 12 22 22 17" />
@@ -198,14 +213,18 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
           )}
           {!isCollapsed && (
             <span className="truncate">
-              {appMode === 'beginner' ? '新手模式' : '专家模式'}
+              {appMode === 'beginner' ? '新手模式' : appMode === 'openclaw' ? 'Open Claw' : '专家模式'}
             </span>
           )}
           {!isCollapsed && (
             <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0
-              ${appMode === 'beginner' ? 'bg-[rgba(59,130,246,0.15)] text-[#2563eb]' : 'bg-[rgba(0,0,0,0.06)] text-[#8e8e93]'}
+              ${
+                appMode === 'beginner' ? 'bg-[rgba(59,130,246,0.15)] text-[#2563eb]' :
+                appMode === 'openclaw' ? 'bg-[rgba(234,88,12,0.15)] text-[#ea580c]' :
+                'bg-[rgba(0,0,0,0.06)] text-[#8e8e93]'
+              }
             `}>
-              {appMode === 'beginner' ? 'ON' : 'OFF'}
+              {appMode === 'normal' ? 'ON' : appMode === 'beginner' ? 'ON' : 'ON'}
             </span>
           )}
         </button>

@@ -85,9 +85,10 @@ function buildGreeting(
 interface BeginnerHomeProps {
   onOpenChat: (message: string) => void;
   onOpenView?: (view: 'home' | 'knowledge' | 'scheduled' | 'market', tab?: 'agents' | 'skills' | 'tasks') => void;
+  appMode?: 'normal' | 'beginner' | 'openclaw';
 }
 
-export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomeProps) {
+export default function BeginnerHome({ onOpenChat, onOpenView, appMode = 'beginner' }: BeginnerHomeProps) {
   const {
     stage, profile, introSkipped, completedTaskTypes, visitedDiscovery,
     saveProfile, skipIntro, markTaskStarted, markTaskDone, markDiscoveryVisited,
@@ -206,6 +207,7 @@ export default function BeginnerHome({ onOpenChat, onOpenView }: BeginnerHomePro
           priorityIds={getPreferredScenarioIds(profile?.useCases ?? liveUseCases)}
           showIntroHeader={stage === 'new_user' || stage === 'introduced' || stage === 'first_task_started'}
           introCard={showIntroCard ? { expanded: introExpanded, onToggle: () => setIntroExpanded(e => !e) } : undefined}
+          appMode={appMode}
         />
       )}
 
