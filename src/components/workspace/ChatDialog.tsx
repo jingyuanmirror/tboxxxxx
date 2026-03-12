@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, Sliders, Mic } from 'lucide-react';
+import { Plus, Sliders, ArrowUp, ArrowLeft } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -127,6 +129,18 @@ async function streamChat(
   }
 }
 
+/** Markdown renderer for agent messages */
+function AgentMessageContent({ text, streaming }: { text: string; streaming?: boolean }) {
+  return (
+    <div className="max-w-[85%]">
+      <div className="prose prose-sm prose-gray max-w-none text-[15px] leading-[1.8] [&_p]:mt-0 [&_p]:mb-2 [&_ul]:mt-1 [&_ol]:mt-1 [&_li]:my-0.5 [&_pre]:bg-gray-100 [&_pre]:rounded-xl [&_code]:text-sm [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:text-gray-600">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+      </div>
+      {streaming && <StreamingCursor />}
+    </div>
+  );
+}
+
 export default function ChatDialog({
   initialMessage = '',
   onClose,
@@ -134,7 +148,12 @@ export default function ChatDialog({
   initialMessage?: string;
   onClose: () => void;
 }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const welcomeMsg: Message = {
+    id: 'welcome',
+    sender: 'agent',
+    text: '你好呀，我是 Tbox 👋\n\n你希望我怎么称呼你？你是从事什么行业的？\n\n当然，你也可以给我起个专属的昵称——你想怎么称呼我？😄',
+  };
+  const [messages, setMessages] = useState<Message[]>(initialMessage.trim() ? [] : [welcomeMsg]);
   const [input, setInput] = useState('');
   const [isWaiting, setIsWaiting] = useState(false); // waiting for first token
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -238,8 +257,15 @@ export default function ChatDialog({
   return (
     <div className="flex flex-col h-full w-full">
       {/* Top bar */}
-      <div className="flex items-center justify-center px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm flex-shrink-0">
-        <span className="text-sm font-medium text-gray-700 truncate max-w-[60%]">{title}</span>
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm flex-shrink-0">
+        <button
+          onClick={onClose}
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-800 cursor-pointer flex-shrink-0"
+          aria-label="返回"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <span className="text-sm font-medium text-gray-700 truncate flex-1 text-center pr-8">{title}</span>
       </div>
 
       {/* Messages area */}
@@ -255,10 +281,7 @@ export default function ChatDialog({
             ) : (
               <div key={m.id} className="flex items-start gap-3">
                 <AgentAvatar />
-                <div className="text-[15px] leading-[1.8] text-gray-800 max-w-[85%] whitespace-pre-wrap">
-                  {m.text}
-                  {m.streaming && <StreamingCursor />}
-                </div>
+                <AgentMessageContent text={m.text} streaming={m.streaming} />
               </div>
             )
           )}
@@ -296,15 +319,12 @@ export default function ChatDialog({
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-200/60 font-medium">
-                  快速
-                </button>
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isWaiting}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-900 text-white hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  <Mic className="w-4 h-4" />
+                  <ArrowUp className="w-4 h-4" />
                 </button>
               </div>
             </div>

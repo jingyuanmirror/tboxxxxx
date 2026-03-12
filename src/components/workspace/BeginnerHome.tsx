@@ -206,7 +206,12 @@ export default function BeginnerHome({ onOpenChat, onOpenView, appMode = 'beginn
           onSelect={handleScenarioSelect}
           priorityIds={getPreferredScenarioIds(profile?.useCases ?? liveUseCases)}
           showIntroHeader={stage === 'new_user' || stage === 'introduced' || stage === 'first_task_started'}
-          introCard={showIntroCard ? { expanded: introExpanded, onToggle: () => setIntroExpanded(e => !e) } : undefined}
+          introCard={showIntroCard ? {
+            expanded: introExpanded,
+            onToggle: appMode === 'openclaw'
+              ? () => { skipIntro(); onOpenChat(''); }
+              : () => setIntroExpanded(e => !e),
+          } : undefined}
           appMode={appMode}
         />
       )}

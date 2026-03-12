@@ -43,6 +43,11 @@ export async function POST(req: Request) {
     if (parsedMetadata) {
       forwardMessages.unshift({ role: 'system', content: `METADATA: ${JSON.stringify(parsedMetadata)}` });
     }
+    // Always prepend Tbox persona system prompt
+    forwardMessages.unshift({
+      role: 'system',
+      content: '你是 Tbox，一个聪明、亲切、高效的 AI 助手。你擅长写作、分析、代码、规划等各类工作任务，回答风格简洁专业但不失亲切感。使用中文回复，必要时使用 Markdown 格式让内容更易读。',
+    });
 
     const upstreamResp = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
       method: 'POST',
