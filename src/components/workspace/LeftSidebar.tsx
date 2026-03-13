@@ -14,13 +14,14 @@ interface LeftSidebarProps {
   onOpenView?: (view: 'home'|'knowledge'|'scheduled'|'market'|'mytools'|'topicSpace', tab?: 'agents'|'skills'|'tasks', spaceId?: string) => void;
   chatHistory?: ChatHistoryItem[];
   onOpenChat?: (message: string) => void;
-  appMode?: 'normal' | 'beginner' | 'openclaw';
-  onToggleMode?: () => void;
+  appMode?: 'normal' | 'beginner' | 'openclaw' | 'student';
+  onSelectMode?: (mode: 'normal' | 'beginner' | 'openclaw' | 'student') => void;
   tboxSkillCount?: number;
 }
 
-export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView, chatHistory = [], onOpenChat, appMode = 'normal', onToggleMode, tboxSkillCount = 0 }: LeftSidebarProps) {
+export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView, chatHistory = [], onOpenChat, appMode = 'normal', onSelectMode, tboxSkillCount = 0 }: LeftSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isModePickerOpen, setIsModePickerOpen] = useState(false);
 
   return (
     <div 
@@ -171,40 +172,134 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
 
       {/* User Settings Area */}
       <div className={`flex-shrink-0 border-t border-[rgba(0,0,0,0.06)] pt-2.5 relative z-10 ${isCollapsed ? 'px-2.5' : 'px-2.5'}`}>
-        {/* Mode Toggle Button — cycles: normal → beginner → openclaw → normal */}
+
+        {/* Mode Picker — upward popup */}
+        {isModePickerOpen && (
+          <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40" onClick={() => setIsModePickerOpen(false)} />
+            <div
+              className={`absolute ${isCollapsed ? 'left-[50px]' : 'left-2.5 right-2.5'} bottom-[calc(100%+4px)] bg-white rounded-2xl p-2 z-50`}
+              style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.06)' }}
+            >
+              <div className="px-3 pb-1.5 pt-1">
+                <span className="text-[10px] font-semibold text-[#a1a1a6] uppercase tracking-[0.6px]">选择模式</span>
+              </div>
+              {([
+                {
+                  id: 'normal' as const,
+                  label: '专家模式',
+                  desc: '全功能，适合进阶用户',
+                  color: '#6a6e73',
+                  activeBg: 'rgba(0,0,0,0.06)',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+                      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                      <polyline points="2 17 12 22 22 17" />
+                      <polyline points="2 12 12 17 22 12" />
+                    </svg>
+                  ),
+                },
+                {
+                  id: 'beginner' as const,
+                  label: '新手模式',
+                  desc: '引导式体验，新用户友好',
+                  color: '#2563eb',
+                  activeBg: 'rgba(59,130,246,0.1)',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+                      <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+                    </svg>
+                  ),
+                },
+                {
+                  id: 'openclaw' as const,
+                  label: 'Open Claw',
+                  desc: '开放爪子模式',
+                  color: '#ea580c',
+                  activeBg: 'rgba(234,88,12,0.1)',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+                      <path d="M9 10.5C9 9.12 7.88 8 6.5 8S4 9.12 4 10.5c0 1.2.8 2.2 1.9 2.45L5 17h3l-.5-4.5A2.5 2.5 0 0 0 9 10.5z" />
+                      <path d="M14.5 8C13.12 8 12 9.12 12 10.5a2.5 2.5 0 0 0 1.5 2.28L13 17h3l-.9-4.05A2.5 2.5 0 0 0 17 10.5C17 9.12 15.88 8 14.5 8z" />
+                      <path d="M7 7c0-1.1.9-2 2-2s2 .9 2 2" />
+                      <path d="M13 7c0-1.1.9-2 2-2s2 .9 2 2" />
+                    </svg>
+                  ),
+                },
+                {
+                  id: 'student' as const,
+                  label: '学生模式',
+                  desc: '专为在校学生定制',
+                  color: '#16a34a',
+                  activeBg: 'rgba(22,163,74,0.1)',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                      <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                    </svg>
+                  ),
+                },
+              ]).map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => { onSelectMode?.(opt.id); setIsModePickerOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer text-left"
+                  style={{
+                    background: appMode === opt.id ? opt.activeBg : 'transparent',
+                    color: appMode === opt.id ? opt.color : '#1d1d1f',
+                  }}
+                  onMouseEnter={e => { if (appMode !== opt.id) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = appMode === opt.id ? opt.activeBg : 'transparent'; }}
+                >
+                  <span style={{ color: appMode === opt.id ? opt.color : '#6a6e73' }}>{opt.icon}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-semibold leading-tight">{opt.label}</span>
+                    {!isCollapsed && <span className="block text-[11px] text-[#a1a1a6] leading-tight mt-0.5">{opt.desc}</span>}
+                  </span>
+                  {appMode === opt.id && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0" style={{ strokeWidth: 2.5, color: opt.color }}>
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Mode Button — click opens picker */}
         <button
-          onClick={onToggleMode}
-          title={
-            appMode === 'normal' ? '切换到新手模式' :
-            appMode === 'beginner' ? '切换到 Open Claw 模式' :
-            '切换到专家模式'
-          }
+          onClick={() => { setIsModePickerOpen(p => !p); setIsSettingsOpen(false); }}
           className={`w-full mb-1 px-[15px] py-2 cursor-pointer text-[13px] rounded-lg transition-all flex items-center gap-2.5 font-medium
             ${
-              appMode === 'beginner'
-                ? 'bg-[rgba(59,130,246,0.1)] text-[#2563eb] hover:bg-[rgba(59,130,246,0.18)]'
-                : appMode === 'openclaw'
-                ? 'bg-[rgba(234,88,12,0.1)] text-[#ea580c] hover:bg-[rgba(234,88,12,0.18)]'
-                : 'text-[#6a6e73] hover:bg-[rgba(0,0,0,0.04)] hover:text-[#1d1d1f]'
+              appMode === 'beginner'  ? 'bg-[rgba(59,130,246,0.1)]  text-[#2563eb] hover:bg-[rgba(59,130,246,0.18)]' :
+              appMode === 'openclaw' ? 'bg-[rgba(234,88,12,0.1)]   text-[#ea580c] hover:bg-[rgba(234,88,12,0.18)]' :
+              appMode === 'student'  ? 'bg-[rgba(22,163,74,0.1)]   text-[#16a34a] hover:bg-[rgba(22,163,74,0.18)]' :
+              'text-[#6a6e73] hover:bg-[rgba(0,0,0,0.04)] hover:text-[#1d1d1f]'
             }
             ${isCollapsed ? 'justify-center px-2.5' : ''}
+            ${isModePickerOpen ? 'ring-2 ring-[rgba(0,0,0,0.08)]' : ''}
           `}
         >
+          {/* Icon by current mode */}
           {appMode === 'beginner' ? (
-            // Star icon for beginner
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
               <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
             </svg>
           ) : appMode === 'openclaw' ? (
-            // Claw / paw icon
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
               <path d="M9 10.5C9 9.12 7.88 8 6.5 8S4 9.12 4 10.5c0 1.2.8 2.2 1.9 2.45L5 17h3l-.5-4.5A2.5 2.5 0 0 0 9 10.5z" />
               <path d="M14.5 8C13.12 8 12 9.12 12 10.5a2.5 2.5 0 0 0 1.5 2.28L13 17h3l-.9-4.05A2.5 2.5 0 0 0 17 10.5C17 9.12 15.88 8 14.5 8z" />
               <path d="M7 7c0-1.1.9-2 2-2s2 .9 2 2" />
               <path d="M13 7c0-1.1.9-2 2-2s2 .9 2 2" />
             </svg>
+          ) : appMode === 'student' ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 3 9 3 12 0v-5" />
+            </svg>
           ) : (
-            // Layers icon for normal/expert
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" style={{ strokeWidth: 1.8 }}>
               <polygon points="12 2 2 7 12 12 22 7 12 2" />
               <polyline points="2 17 12 22 22 17" />
@@ -212,24 +307,21 @@ export default function LeftSidebar({ isCollapsed, onToggleCollapse, onOpenView,
             </svg>
           )}
           {!isCollapsed && (
-            <span className="truncate">
-              {appMode === 'beginner' ? '新手模式' : appMode === 'openclaw' ? 'Open Claw' : '专家模式'}
+            <span className="truncate flex-1">
+              {appMode === 'beginner' ? '新手模式' : appMode === 'openclaw' ? 'Open Claw' : appMode === 'student' ? '学生模式' : '专家模式'}
             </span>
           )}
           {!isCollapsed && (
-            <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0
-              ${
-                appMode === 'beginner' ? 'bg-[rgba(59,130,246,0.15)] text-[#2563eb]' :
-                appMode === 'openclaw' ? 'bg-[rgba(234,88,12,0.15)] text-[#ea580c]' :
-                'bg-[rgba(0,0,0,0.06)] text-[#8e8e93]'
-              }
-            `}>
-              {appMode === 'normal' ? 'ON' : appMode === 'beginner' ? 'ON' : 'ON'}
-            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"
+              className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isModePickerOpen ? 'rotate-180' : ''}`}
+              style={{ strokeWidth: 2, opacity: 0.5 }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           )}
         </button>
+
         <button
-          onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+          onClick={() => { setIsSettingsOpen(!isSettingsOpen); setIsModePickerOpen(false); }}
           className={`px-[15px] py-2 cursor-pointer text-[13px] rounded-lg transition-all text-[#6a6e73] flex items-center gap-2.5 font-medium hover:bg-[rgba(0,0,0,0.04)] hover:text-[#1d1d1f] ${isCollapsed ? 'justify-center w-fit px-2.5 h-8' : ''}`}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" style={{ strokeWidth: 1.8 }}>

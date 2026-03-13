@@ -85,7 +85,7 @@ function buildGreeting(
 interface BeginnerHomeProps {
   onOpenChat: (message: string) => void;
   onOpenView?: (view: 'home' | 'knowledge' | 'scheduled' | 'market', tab?: 'agents' | 'skills' | 'tasks') => void;
-  appMode?: 'normal' | 'beginner' | 'openclaw';
+  appMode?: 'normal' | 'beginner' | 'openclaw' | 'student';
 }
 
 export default function BeginnerHome({ onOpenChat, onOpenView, appMode = 'beginner' }: BeginnerHomeProps) {

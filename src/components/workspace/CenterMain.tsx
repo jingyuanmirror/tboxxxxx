@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import MagicInput from './MagicInput';
 import ChatDialog from './ChatDialog';
 import BeginnerHome from './BeginnerHome';
+import StudentHome from './StudentHome';
 import TopicSpaceView from './TopicSpaceView';
 import { Check, ChevronDown, MessageSquare, Send, X } from 'lucide-react';
 
@@ -39,10 +40,35 @@ interface CenterMainProps {
   onCloseChat?: () => void;
   onOpenMarket?: (tab: 'agents' | 'skills') => void;
   onNavigateTo?: (view: 'home' | 'knowledge' | 'scheduled' | 'market' | 'mytools' | 'topicSpace', tab?: 'agents' | 'skills' | 'tasks') => void;
-  appMode?: 'normal' | 'beginner' | 'openclaw';
+  appMode?: 'normal' | 'beginner' | 'openclaw' | 'student';
 }
 
 export default function CenterMain({ isLeftSidebarCollapsed, activeView = 'home', activeSpaceId, marketInitialTab, onCloseScheduledTasks, isChatOpen = false, chatInitialMessage = '', onOpenChat, onCloseChat, onOpenMarket, onNavigateTo, appMode = 'normal' }: CenterMainProps) {
+
+  // Student mode: dedicated home — same container/bg as normal expert mode
+  if (appMode === 'student' && !isChatOpen && activeView === 'home') {
+    return (
+      <div className="flex-1 flex flex-col items-center pt-6 pb-5 relative overflow-y-auto overflow-x-hidden bg-[#f2f4f6] z-[1] px-[60px] pl-10">
+        {/* Same background image as normal mode */}
+        <div
+          className={`fixed top-0 right-0 bottom-0 opacity-50 pointer-events-none -z-[1] transition-all duration-300 ${
+            isLeftSidebarCollapsed ? 'left-[90px]' : 'left-[220px]'
+          }`}
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1566041510394-cf7c8d968e4e?q=80&w=2671&auto=format&fit=crop')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center right',
+            backgroundRepeat: 'no-repeat',
+            mixBlendMode: 'multiply',
+            filter: 'blur(2px) contrast(1.05)',
+          }}
+        />
+        <div className="w-full max-w-[950px] flex flex-col items-start relative z-[2]">
+          <StudentHome onOpenChat={msg => onOpenChat?.(msg)} onOpenMarket={onOpenMarket} />
+        </div>
+      </div>
+    );
+  }
 
   const [items, setItems] = useState<ConfirmItem[]>(initialItems);
   const [replyingId, setReplyingId] = useState<number | null>(null);

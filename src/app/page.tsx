@@ -12,7 +12,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState<'home'|'knowledge'|'scheduled'|'market'|'mytools'|'topicSpace'>('home');
   const [marketInitialTab, setMarketInitialTab] = useState<'agents'|'skills'|'tasks'|undefined>(undefined);
   const [activeSpaceId, setActiveSpaceId] = useState<string | undefined>(undefined);
-  const [appMode, setAppMode] = useState<'normal' | 'beginner' | 'openclaw'>('normal');
+  const [appMode, setAppMode] = useState<'normal' | 'beginner' | 'openclaw' | 'student'>('normal');
 
   // Chat state lifted here so Header & RightSidebar can be hidden
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function Home() {
           isCollapsed={isLeftSidebarCollapsed}
           onToggleCollapse={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
           appMode={appMode}
-          onToggleMode={() => setAppMode(m => m === 'normal' ? 'beginner' : m === 'beginner' ? 'openclaw' : 'normal')}
+          onSelectMode={(m) => setAppMode(m)}
           onOpenView={(v, tab, spaceId) => {
             // Close chat when navigating via sidebar
             if (isChatOpen) handleCloseChat();
@@ -77,7 +77,7 @@ export default function Home() {
           }}
         />
         
-        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && activeView !== 'topicSpace' && appMode === 'normal' && <RightSidebar isVisible={isRightSidebarVisible} />}
+        {!isChatOpen && activeView !== 'knowledge' && activeView !== 'market' && activeView !== 'mytools' && activeView !== 'topicSpace' && (appMode === 'normal' || appMode === 'student') && <RightSidebar isVisible={isRightSidebarVisible} />}
       </div>
     </div>
   );
